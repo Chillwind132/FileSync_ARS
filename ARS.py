@@ -208,6 +208,7 @@ def check_dir_for_changes():
     return Directory_change_bool
 
 
+
 if check_auto_flag() == '1':
     if check_config_present() == False:
         print("Log error to excel placeholder")
@@ -251,9 +252,7 @@ else:
     user_input()
     config_save('0')
 
-
 populate_data()
-
 
 ask_user_automation()
 
