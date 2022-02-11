@@ -1,4 +1,3 @@
-
 from pathlib import Path
 from pickle import FALSE, TRUE
 from tkinter import N
@@ -11,14 +10,13 @@ import time
 
 def check_if_config_1stp():
     currentdir = Path(__file__).parent.absolute()
-    v = str(currentdir)
-    a = '\config.json'
-    c = v + a
-    if os.path.exists(c):
+    fullpath = os.path.join(currentdir, 'config.json')
+    if os.path.exists(fullpath):
         with open('config.json', 'r') as f:
             config_loaded = json.load(f)
             src = config_loaded["source_path"]
     return src
+
 
 def populate_data():
     mypath = r'C:\Users\Mike\Documents\Dest_Copy'
@@ -44,12 +42,10 @@ def populate_data():
         json.dump(sampleJson, jsonfile)
 
 
-def check_dir_change():
+def check_dir_change(trg):
     currentdir = Path(__file__).parent.absolute()
-    v = str(currentdir)
-    a = '\data.json'
-    c = v + a
-    if os.path.exists(c):
+    fullpath = os.path.join(currentdir, 'config.json')
+    if os.path.exists(fullpath):
         with open('data.json', 'r') as f:
             file_history_loaded = json.load(f)
             if file_history_loaded == '':
@@ -60,6 +56,7 @@ def check_dir_change():
     else:
         with open("data.json", "w") as jsonfile:
             json.dump('0', jsonfile)
+        print("First time setup mode...")
         populate_data()
 
     with open('data.json', 'r') as f:
@@ -69,11 +66,11 @@ def check_dir_change():
     #print('Decoded set:', decodedSet)   
 
     #mypath=Path(__file__).parent.absolute()
-    mypath = r'C:\Users\Mike\Documents\Source_Copy'
+    #mypath = r'C:\Users\Mike\Documents\Source_Copy'
 
     nameSet=set()
-    for file in os.listdir(mypath):
-        fullpath=os.path.join(mypath, file)
+    for file in os.listdir(trg):
+        fullpath=os.path.join(trg, file)
         
         if  os.path.isfile(fullpath):
             nameSet.add(file)
@@ -85,9 +82,9 @@ def check_dir_change():
 
     retrievedSet=set()
     for name in nameSet:
-        stat=os.stat(os.path.join(mypath, name))
-        time=os.path.getmtime(os.path.join(mypath, name))
-        size=os.path.getsize(os.path.join(mypath, name)) 
+        stat=os.stat(os.path.join(trg, name))
+        time=os.path.getmtime(os.path.join(trg, name))
+        size=os.path.getsize(os.path.join(trg, name)) 
         retrievedSet.add((name, time, size)) 
         
 
@@ -185,26 +182,30 @@ def config_save(s_path, t_path, auto_flag):
 
 #load config from JSON
 def load_config():
-    with open('config.json', 'r') as f:
-        config_loaded = json.load(f)
+    mypath = Path(__file__).parent.absolute()
+    fullpath=os.path.join(mypath, 'config.json')
 
-        src = config_loaded["source_path"]
-        trg = config_loaded["target_path"]
-    return src, trg
+    if os.path.isfile(fullpath):
+        print("Config.json exists")
+        with open('config.json', 'r') as f:
+            config_loaded = json.load(f)
+
+            src = config_loaded["source_path"]
+            trg = config_loaded["target_path"]
+        return src, trg
+    else:
+        print("DOES NOT EXIST")
+    
 #Checks for automation flag; 1 = enabled
 def check_auto_flag():
     currentdir = Path(__file__).parent.absolute()
-    v = str(currentdir)
-    a = '\config.json'
-    c = v + a
-    if os.path.exists(c):
+    fullpath = os.path.join(currentdir, 'config.json')
+    if os.path.exists(fullpath):
         with open('config.json', 'r') as f:
             config_loaded = json.load(f)
             flag = config_loaded["Automation Flag"]
         return flag
     
-
-#Check for Config file 
 flag = check_auto_flag()
 
 if flag == '1':
@@ -215,7 +216,7 @@ if flag == '1':
     source_path = result[0]
     target_path = result[1]
     
-    dir_flag = check_dir_change()
+    dir_flag = check_dir_change(source_path)
     if dir_flag == False:
         print('File Changes detected, syncing...')
         time.sleep(1)
@@ -224,22 +225,19 @@ if flag == '1':
         print('No File Changes detected since last scan')
     else:
         print('Unknown exception')
-
-    
     quit()
 
-
-dir_flag = check_dir_change()
-
 currentdir = Path(__file__).parent.absolute()
+#currentdir = r'C:\Users\Mike\Documents\Source_Copy'
+#saved_dir_init = load_config()
 
-v = str(currentdir)
+#dir_flag = check_dir_change(saved_dir_init[0])
+dir_flag = check_dir_change(currentdir)
 
-a = '\config.json'
-c = v + a
-#print(c)
 
-if os.path.exists(c):
+fullpath = os.path.join(currentdir, 'config.json')
+
+if os.path.exists(fullpath):
     print("Automation mode disabled. You can enable it once you save the current config")
 
     if check_if_config_1stp() == '0':
@@ -273,16 +271,10 @@ else:
     source_path = result_userinput[0]
     target_path = result_userinput[1]
 
-
-
-
 #source_path = 'C:\Users\Mike\Documents\Source_Copy'
 #target_path = 'C:\Users\Mike\Documents\Dest_Copy'
 
-
 sync(source_path,target_path,'sync', twoway=True, create=True)
-
-
 
 verification_2 = input("Would you like to save the config and set up automation mode? Type y/n\n").strip()
 if verification_2 == 'y':
