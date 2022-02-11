@@ -115,8 +115,7 @@ def load_data():
 
 def ask_user_sync():
     global ask_user_sync_anwser
-    ask_user_sync_anwser = input(
-        "Would you like to sync now? Or edit current properties? Type y to sync, n to edit\n").strip()
+    ask_user_sync_anwser = input("Would you like to sync now? Or edit current properties? Type y to sync, n to edit\n").strip()
     while ask_user_sync_anwser != 'y' and ask_user_sync_anwser != 'n':
         print('Invalid input')
         ask_user_sync_anwser = input("Type y to sync, n to edit\n").strip()
@@ -146,12 +145,10 @@ def populate_data():
 
 
 def ask_user_automation():
-    ask_user_automation_anwser = input(
-        "Would you like to convert this script to monitor mode and set auto_flag = 1. Type y/n\n").strip()
+    ask_user_automation_anwser = input("Would you like to convert this script to monitor mode and set auto_flag = 1. Type y/n\n").strip()
     while ask_user_automation_anwser != 'y' and ask_user_automation_anwser != 'n':
         print('Invalid input')
-        ask_user_automation_anwser = input(
-            "Would you like to convert this script to monitor mode and set auto_flag = 1. Type y/n\n").strip()
+        ask_user_automation_anwser = input("Would you like to convert this script to monitor mode and set auto_flag = 1. Type y/n\n").strip()
     if ask_user_automation_anwser == 'y':
         config_save('1')
         print("Automation mode enabled and saved to config.json.")
