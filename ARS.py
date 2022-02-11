@@ -1,3 +1,4 @@
+from ast import excepthandler
 from pathlib import Path
 from pickle import FALSE, TRUE
 from tkinter import N
@@ -8,124 +9,35 @@ import pathlib
 import jsonpickle
 import time
 
-def check_if_config_1stp():
+
+def check_config_present():
     currentdir = Path(__file__).parent.absolute()
     fullpath = os.path.join(currentdir, 'config.json')
     if os.path.exists(fullpath):
-        with open('config.json', 'r') as f:
-            config_loaded = json.load(f)
-            src = config_loaded["source_path"]
-    return src
+        config_exists = True
+    else:
+        config_exists = False
+    return config_exists
 
 
-def populate_data():
-    mypath = r'C:\Users\Mike\Documents\Dest_Copy'
-    nameSet=set()
-    for file in os.listdir(mypath):
-        fullpath=os.path.join(mypath, file)
-        if os.path.isfile(fullpath):
-            nameSet.add(file)
-
-    retrievedSet=set()
-    for name in nameSet:
-        stat=os.stat(os.path.join(mypath, name))
-        time=os.path.getmtime(os.path.join(mypath, name))
-        size = os.path.getsize(os.path.join(mypath, name))
-        retrievedSet.add((name, time, size))
-
-
-    sampleJson = jsonpickle.encode(retrievedSet)
-        #print('Saved set:', savedSet)
-        #print('Saved JSON:', sampleJson)
-
-    with open("data.json", "w") as jsonfile:
-        json.dump(sampleJson, jsonfile)
-
-
-def check_dir_change(trg):
+def check_data_present():
     currentdir = Path(__file__).parent.absolute()
-    fullpath = os.path.join(currentdir, 'config.json')
+    fullpath = os.path.join(currentdir, 'data.json')
     if os.path.exists(fullpath):
-        with open('data.json', 'r') as f:
-            file_history_loaded = json.load(f)
-            if file_history_loaded == '':
-                print("data.json is empty! Scanning...")
-
-                populate_data()
-
+        config_exists = True
     else:
-        with open("data.json", "w") as jsonfile:
-            json.dump('0', jsonfile)
-        print("First time setup mode...")
-        populate_data()
-
-    with open('data.json', 'r') as f:
-        file_history_loaded = json.load(f)
-
-    decodedSet = jsonpickle.decode(file_history_loaded)
-    #print('Decoded set:', decodedSet)   
-
-    #mypath=Path(__file__).parent.absolute()
-    #mypath = r'C:\Users\Mike\Documents\Source_Copy'
-
-    nameSet=set()
-    for file in os.listdir(trg):
-        fullpath=os.path.join(trg, file)
-        
-        if  os.path.isfile(fullpath):
-            nameSet.add(file)
-        else:
-            os.path.isdir(fullpath)
-            nameSet.add(file)
-
-   
-
-    retrievedSet=set()
-    for name in nameSet:
-        stat=os.stat(os.path.join(trg, name))
-        time=os.path.getmtime(os.path.join(trg, name))
-        size=os.path.getsize(os.path.join(trg, name)) 
-        retrievedSet.add((name, time, size)) 
-        
-
-    if decodedSet != 0:
-        newSet=retrievedSet-decodedSet
-        deletedSet = decodedSet-retrievedSet
-        print('NewSet:', newSet)
-        print('DeletedSet:', deletedSet)
-
-        isEmpty_1 = (len(newSet) == 0)
-        isEmpty_2 = (len(deletedSet) == 0)
-
-        if isEmpty_1 == False or isEmpty_2 == False:
-            isEmpty = False
-        else:
-            isEmpty = True
+        config_exists = False
+    return config_exists
 
 
-        if isEmpty == True:
-            print("No File Changes")
-        else:
-            print("File Changes")
-
-        sampleJson = jsonpickle.encode(retrievedSet)
-        #print('Saved set:', savedSet)
-        #print('Saved JSON:', sampleJson)
+def first_ran_func():
+    print("Config not present. Initializing... ")
 
 
-        with open("data.json", "w") as jsonfile:
-           json.dump(sampleJson, jsonfile)
-
-
-        return isEmpty
-    else:
-        newSet = set()
-    
-
-
-#Get user input
 def user_input():
-    source_path = input (r"Enter the sync source directory:").strip()
+    global source_path
+    global target_path
+    source_path = input(r"Enter the sync source directory:").strip()
     print(source_path)
 
     my_file = Path(source_path)
@@ -143,18 +55,18 @@ def user_input():
                 print("Dir exists")
             else:
                 print("Dir does not exist, try again")
-    target_path = input (r"Enter the sync TARGET (folder):").strip()
+    target_path = input(r"Enter the sync TARGET (folder):").strip()
     print(target_path)
 
     my_file = Path(target_path)
     if my_file.is_dir():
         print("Dir exists")
-    else:    
+    else:
         print("Dir does not exist, try again")
 
         isdir = os.path.isdir(target_path)
         while isdir == False:
-            target_path = input (r"Enter the sync target directory:").strip()
+            target_path = input(r"Enter the sync target directory:").strip()
             isdir = os.path.isdir(target_path)
             my_file = Path(target_path)
             if my_file.is_dir():
@@ -162,41 +74,92 @@ def user_input():
             else:
                 print("Dir does not exist, try again")
 
-    
-    
-    return source_path, target_path
-    
 
-#Save current config to JSON
-def config_save(s_path, t_path, auto_flag):
-    op_conf = {
-        r"source_path" : s_path,
-        r"target_path" : t_path,
+def config_save(auto_flag):
+    data = {
+        r"source_path": source_path,
+        r"target_path": target_path,
         r'Automation Flag': auto_flag,
     }
-
+    json_string = json.dumps(data)
     with open("config.json", "w") as jsonfile:
-        json.dump(op_conf, jsonfile)
+        json.dump(data, jsonfile)
 
 
-
-#load config from JSON
 def load_config():
     mypath = Path(__file__).parent.absolute()
-    fullpath=os.path.join(mypath, 'config.json')
-
+    fullpath = os.path.join(mypath, 'config.json')
     if os.path.isfile(fullpath):
-        print("Config.json exists")
+        print("Config.json exists - Loading....")
         with open('config.json', 'r') as f:
             config_loaded = json.load(f)
 
-            src = config_loaded["source_path"]
-            trg = config_loaded["target_path"]
-        return src, trg
+            global source_path
+            global target_path
+            source_path = config_loaded["source_path"]
+            target_path = config_loaded["target_path"]
+    return source_path, target_path
+
+
+def load_data():
+    mypath = Path(__file__).parent.absolute()
+    fullpath = os.path.join(mypath, 'data.json')
+    if os.path.isfile(fullpath):
+        print("Data.json exists - Loading....")
+        with open('data.json', 'r') as f:
+            global file_history_snapshot_set
+            file_history_snapshot = json.load(f)
+            file_history_snapshot_set = jsonpickle.decode(
+                file_history_snapshot)
+
+
+def ask_user_sync():
+    global ask_user_sync_anwser
+    ask_user_sync_anwser = input(
+        "Would you like to sync now? Or edit current properties? Type y to sync, n to edit\n").strip()
+    while ask_user_sync_anwser != 'y' and ask_user_sync_anwser != 'n':
+        print('Invalid input')
+        ask_user_sync_anwser = input("Type y to sync, n to edit\n").strip()
+
+
+def populate_data():
+    nameSet = set()
+    for file in os.listdir(source_path):
+        fullpath = os.path.join(source_path, file)
+        if os.path.isfile(fullpath):
+            nameSet.add(file)
+        if os.path.isfile(fullpath):
+            nameSet.add(file)
+        else:
+            os.path.isdir(fullpath)
+            nameSet.add(file)
+    retrievedSet = set()
+    for name in nameSet:
+        stat = os.stat(os.path.join(source_path, name))
+        time = os.path.getmtime(os.path.join(source_path, name))
+        size = os.path.getsize(os.path.join(source_path, name))
+        retrievedSet.add((name, time, size))
+    sampleJson = jsonpickle.encode(retrievedSet)
+
+    with open("data.json", "w") as jsonfile:
+        json.dump(sampleJson, jsonfile)
+
+
+def ask_user_automation():
+    ask_user_automation_anwser = input(
+        "Would you like to convert this script to monitor mode and set auto_flag = 1. Type y/n\n").strip()
+    while ask_user_automation_anwser != 'y' and ask_user_automation_anwser != 'n':
+        print('Invalid input')
+        ask_user_automation_anwser = input(
+            "Would you like to convert this script to monitor mode and set auto_flag = 1. Type y/n\n").strip()
+    if ask_user_automation_anwser == 'y':
+        config_save('1')
+        print("Automation mode enabled and saved to config.json.")
+        print("You can disable it by setting auto_flag property back to '0' ")
     else:
-        print("DOES NOT EXIST")
-    
-#Checks for automation flag; 1 = enabled
+        print("Exiting...")
+
+
 def check_auto_flag():
     currentdir = Path(__file__).parent.absolute()
     fullpath = os.path.join(currentdir, 'config.json')
@@ -205,104 +168,94 @@ def check_auto_flag():
             config_loaded = json.load(f)
             flag = config_loaded["Automation Flag"]
         return flag
-    
-flag = check_auto_flag()
 
-if flag == '1':
-    print('Automation mode detected, loading the config and checking the target dir for any changes')
-    print('To revert back to normal mode set "Automation Flag" to "0" in config.json')
-    time.sleep(1)
-    result = load_config()
-    source_path = result[0]
-    target_path = result[1]
-    
-    dir_flag = check_dir_change(source_path)
-    if dir_flag == False:
-        print('File Changes detected, syncing...')
-        time.sleep(1)
-        sync(source_path, target_path, 'sync', create=True)
-    elif dir_flag == True:
-        print('No File Changes detected since last scan')
+
+def check_dir_for_changes():
+    nameSet = set()
+    for file in os.listdir(source_path):
+        fullpath = os.path.join(source_path, file)
+        if os.path.isfile(fullpath):
+            nameSet.add(file)
+        if os.path.isfile(fullpath):
+            nameSet.add(file)
+        else:
+            os.path.isdir(fullpath)
+            nameSet.add(file)
+
+    current_files_set_now = set()
+    for name in nameSet:
+        stat = os.stat(os.path.join(source_path, name))
+        time = os.path.getmtime(os.path.join(source_path, name))
+        size = os.path.getsize(os.path.join(source_path, name))
+        current_files_set_now.add((name, time, size))
+
+    global new_files_set
+    global deleted__files_set
+    global Directory_change_bool
+
+    new_files_set = current_files_set_now - file_history_snapshot_set
+    deleted__files_set = file_history_snapshot_set - current_files_set_now
+
+    files_deleted_bool = (len(new_files_set) == 0)
+    files_added_bool = (len(deleted__files_set) == 0)
+
+    if files_added_bool == False or files_deleted_bool == False:
+        Directory_change_bool = True
     else:
-        print('Unknown exception')
-    quit()
 
-currentdir = Path(__file__).parent.absolute()
-#currentdir = r'C:\Users\Mike\Documents\Source_Copy'
-#saved_dir_init = load_config()
+        Directory_change_bool = False
 
-#dir_flag = check_dir_change(saved_dir_init[0])
-dir_flag = check_dir_change(currentdir)
+    return Directory_change_bool
 
 
-fullpath = os.path.join(currentdir, 'config.json')
-
-if os.path.exists(fullpath):
-    print("Automation mode disabled. You can enable it once you save the current config")
-
-    if check_if_config_1stp() == '0':
-        print("First time setup mode")
-        dest_array = user_input()
-
-        config_save(dest_array[0], dest_array[1], '0') # SAVE THE S AND T VALUES INTO CONFIG.JSON 
-
-    print("Config found")
-    verification = input ("Would you like to load the config and run the sync now? Or enter the configuration menu? Type y to sync, n to enter menu\n").strip()
-    while verification != 'y' and verification != 'n':
-        print('Invalid input')
-        verification = input("Type y to sync, n to enter menu\n").strip()
-
-    if verification == 'y':
-
+if check_auto_flag() == '1':
+    if check_config_present() == False:
+        print("Log error to excel placeholder")
+    elif check_data_present() == False:
+        print("Log error to excel placeholder")
+    else:
         load_config()
-        result = load_config()
-        print(result)
-        source_path = result[0]
-        target_path = result[1]
-    elif verification == 'n':
-        result_userinput = user_input()
-        print(result_userinput)
-        source_path = result_userinput[0]
-        target_path = result_userinput[1]
+        load_data()
+
+        if check_dir_for_changes() == True:
+            print('File Changes are detected. Syncing...')
+            sync(source_path, target_path, 'sync', create=True)
+            
+        else:
+            print('No File changes detected since last ran.')
+
+        populate_data()
+        print('File data updated. Exiting...')
+        time.sleep(1)
+        quit()
+
+if check_config_present() == False:
+    first_ran_func()
+    user_input()
+    config_save('0')
 else:
-    print("Config NOT found")
-    result_userinput = user_input()
-    print(result_userinput)
-    source_path = result_userinput[0]
-    target_path = result_userinput[1]
+    load_config()
+ask_user_sync()
+
+if ask_user_sync_anwser == 'y':
+    try:
+        sync(source_path, target_path, 'sync', create=True)
+    except ValueError as exception:
+        print('There was a problem with loading the config, please reconfigure the source and target path values.\n')
+        print(r'For example: Correct input format - C:\Users\Mike\Documents\Source_Copy')
+        quit()
+    else:
+        print('Unknow sync error, exiting')
+        quit()
+else:
+    user_input()
+    config_save('0')
+
+
+populate_data()
+
+
+ask_user_automation()
 
 #source_path = 'C:\Users\Mike\Documents\Source_Copy'
 #target_path = 'C:\Users\Mike\Documents\Dest_Copy'
-
-sync(source_path,target_path,'sync', twoway=True, create=True)
-
-verification_2 = input("Would you like to save the config and set up automation mode? Type y/n\n").strip()
-if verification_2 == 'y':
-    while verification_2 != 'y' and verification_2 != 'n':
-        print('Invalid input')
-        verification_2 = input("Would you like to save the config and set up automation mode? Type y/n\n").strip()
-
-    if verification_2 == 'y':
-        config_save(source_path, target_path, '0')
-        print('Config Saved')
-        verification_3 = input("Would you like to convert this script to monitor mode and set auto_flag = 1. Type y/n\n").strip()
-        while verification_2 != 'y' and verification_2 != 'n':
-            print('Invalid input')
-            verification_3 = input("Would you like to convert this script to monitor mode and set auto_flag = 1. Type y/n\n").strip()
-        if verification_3 == 'y':
-            config_save(source_path, target_path, '1')
-            print("Automation mode enabled and saved to config.json.")
-            print("You can disable it by setting auto_flag property back to '0' ")
-        else:
-            print("Exiting...")
-    elif verification_2 == 'n':
-        print('Config not saved, automation mode can not function without config.json.')
-        print('Exiting the script...')
-
-       
-        
-
-
-
-        
-
