@@ -3,11 +3,13 @@ from pathlib import Path
 from pickle import FALSE, TRUE
 from tkinter import N
 from dirsync import sync
+from datetime import datetime
 import os.path
 import json
 import pathlib
 import jsonpickle
 import time
+import csv  
 
 
 def check_config_present():
@@ -137,7 +139,9 @@ def populate_data():
         stat = os.stat(os.path.join(source_path, name))
         time = os.path.getmtime(os.path.join(source_path, name))
         size = os.path.getsize(os.path.join(source_path, name))
-        retrievedSet.add((name, time, size))
+        time_str = str(time)
+        size_str = str(size)
+        retrievedSet.add((name, time_str, size_str))
     sampleJson = jsonpickle.encode(retrievedSet)
 
     with open("data.json", "w") as jsonfile:
@@ -184,8 +188,10 @@ def check_dir_for_changes():
         stat = os.stat(os.path.join(source_path, name))
         time = os.path.getmtime(os.path.join(source_path, name))
         size = os.path.getsize(os.path.join(source_path, name))
-        current_files_set_now.add((name, time, size))
-
+        time_str = str(time)
+        size_str = str(size)
+        current_files_set_now.add((name, time_str, size_str))
+        
     global new_files_set
     global deleted__files_set
     global Directory_change_bool
@@ -193,18 +199,69 @@ def check_dir_for_changes():
     new_files_set = current_files_set_now - file_history_snapshot_set
     deleted__files_set = file_history_snapshot_set - current_files_set_now
 
+    global new_files_list
+    new_files_list = list(new_files_set)
+
     files_deleted_bool = (len(new_files_set) == 0)
     files_added_bool = (len(deleted__files_set) == 0)
 
     if files_added_bool == False or files_deleted_bool == False:
         Directory_change_bool = True
     else:
-
         Directory_change_bool = False
 
     return Directory_change_bool
 
 
+def convertTuple(tup):
+    st = ''.join(map(str, tup))
+    return st
+
+
+def save_data_to_cvs(data):
+    with open('file_history.csv', 'a+', newline='') as f:
+        for x in data:
+            list_1 = list(x)
+
+            time_convert = int(float(list_1[1]))  # CONVERT STR to INT (time)
+            list_1[1] = time.ctime(time_convert)
+        
+            size_convert = int(list_1[2]) / 1000
+            list_1[2] = size_convert
+
+            write = csv.writer(f)
+            write.writerows([list_1])
+            
+        
+def check_csv_header():
+    with open('file_history.csv') as f:
+        mycsv = csv.reader(f)
+        for row in mycsv:
+            global refernce_header
+            refernce_header = ['File name', 'Date modified', 'File size (KB)']
+            if row == refernce_header:
+                return None
+            else:
+                create_csv_header()
+
+
+def create_csv_header():
+    
+    file = open('file_history.csv', 'w', newline='')
+    write = csv.writer(file)
+    write.writerows([refernce_header])
+            
+
+def convertTuple(tup):
+    st = ''.join(map(str, tup))
+    return st      
+
+         
+            
+try:
+    check_csv_header()
+except:
+    create_csv_header()
 
 if check_auto_flag() == '1':
     if check_config_present() == False:
@@ -223,6 +280,7 @@ if check_auto_flag() == '1':
             print('No File changes detected since last ran.')
 
         populate_data()
+        save_data_to_cvs(new_files_list)
         print('File data updated. Exiting...')
         time.sleep(1)
         quit()
@@ -251,7 +309,7 @@ else:
 
 populate_data()
 
-ask_user_automation()
+save_data_to_cvs(new_files_list)
 
 #source_path = 'C:\Users\Mike\Documents\Source_Copy'
 #target_path = 'C:\Users\Mike\Documents\Dest_Copy'
