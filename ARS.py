@@ -17,6 +17,7 @@ def check_config_present():
     fullpath = os.path.join(currentdir, 'config.json')
     if os.path.exists(fullpath):
         config_exists = True
+        load_config()
     else:
         config_exists = False
     return config_exists
@@ -29,6 +30,7 @@ def check_data_present():
         config_exists = True
     else:
         config_exists = False
+        save_current_files_to_data()
     return config_exists
 
 
@@ -92,7 +94,7 @@ def load_config():
     mypath = Path(__file__).parent.absolute()
     fullpath = os.path.join(mypath, 'config.json')
     if os.path.isfile(fullpath):
-        print("Config.json exists - Loading....")
+        print("Config.json loaded")
         with open('config.json', 'r') as f:
             config_loaded = json.load(f)
 
@@ -107,13 +109,12 @@ def load_data():
     mypath = Path(__file__).parent.absolute()
     fullpath = os.path.join(mypath, 'data.json')
     if os.path.isfile(fullpath):
-        print("Data.json exists - Loading....")
+        print("Data.json loaded")
         with open('data.json', 'r') as f:
             global file_history_snapshot_set
             file_history_snapshot = json.load(f)
-            file_history_snapshot_set = jsonpickle.decode(
-                file_history_snapshot)
-
+            file_history_snapshot_set = jsonpickle.decode(file_history_snapshot)
+    
 
 def ask_user_sync():
     global ask_user_sync_anwser
@@ -121,6 +122,7 @@ def ask_user_sync():
     while ask_user_sync_anwser != 'y' and ask_user_sync_anwser != 'n':
         print('Invalid input')
         ask_user_sync_anwser = input("Type y to sync, n to edit\n").strip()
+    return ask_user_sync_anwser
 
 
 def populate_data():
@@ -144,9 +146,42 @@ def populate_data():
         retrievedSet.add((name, time_str, size_str))
     sampleJson = jsonpickle.encode(retrievedSet)
 
+    global new_files_set
+    global deleted__files_set
+    global Directory_change_bool
+
+    new_files_set = retrievedSet - file_history_snapshot_set
+    deleted__files_set = file_history_snapshot_set - retrievedSet
+
+    global new_files_list
+    new_files_list = list(new_files_set)
+
     with open("data.json", "w") as jsonfile:
         json.dump(sampleJson, jsonfile)
 
+
+def save_current_files_to_data():
+    nameSet = set()
+    for file in os.listdir(source_path):
+        fullpath = os.path.join(source_path, file)
+        if os.path.isfile(fullpath):
+            nameSet.add(file)
+        if os.path.isfile(fullpath):
+            nameSet.add(file)
+        else:
+            os.path.isdir(fullpath)
+            nameSet.add(file)
+    retrievedSet = set()
+    for name in nameSet:
+        stat = os.stat(os.path.join(source_path, name))
+        time = os.path.getmtime(os.path.join(source_path, name))
+        size = os.path.getsize(os.path.join(source_path, name))
+        time_str = str(time)
+        size_str = str(size)
+        retrievedSet.add((name, time_str, size_str))
+    sampleJson = jsonpickle.encode(retrievedSet)
+    with open("data.json", "w") as jsonfile:
+        json.dump(sampleJson, jsonfile)
 
 def ask_user_automation():
     ask_user_automation_anwser = input("Would you like to convert this script to monitor mode and set auto_flag = 1. Type y/n\n").strip()
@@ -192,15 +227,7 @@ def check_dir_for_changes():
         size_str = str(size)
         current_files_set_now.add((name, time_str, size_str))
         
-    global new_files_set
-    global deleted__files_set
-    global Directory_change_bool
-
-    new_files_set = current_files_set_now - file_history_snapshot_set
-    deleted__files_set = file_history_snapshot_set - current_files_set_now
-
-    global new_files_list
-    new_files_list = list(new_files_set)
+    
 
     files_deleted_bool = (len(new_files_set) == 0)
     files_added_bool = (len(deleted__files_set) == 0)
@@ -234,16 +261,27 @@ def save_data_to_cvs(data):
             
         
 def check_csv_header():
+    global refernce_header
+    refernce_header = ['File name', 'Date modified', 'File size (KB)']
     with open('file_history.csv') as f:
         mycsv = csv.reader(f)
+        
         for row in mycsv:
-            global refernce_header
-            refernce_header = ['File name', 'Date modified', 'File size (KB)']
+            
             if row == refernce_header:
                 return None
             else:
                 create_csv_header()
-
+        if is_empty_csv() == True:
+            create_csv_header()
+        
+def is_empty_csv():
+    with open('file_history.csv') as f:
+        reader = csv.reader(f)
+        for i, _ in enumerate(reader):
+            if i:  
+                return False
+    return True
 
 def create_csv_header():
     
@@ -256,60 +294,64 @@ def convertTuple(tup):
     st = ''.join(map(str, tup))
     return st      
 
-         
-            
+
+
 try:
     check_csv_header()
 except:
     create_csv_header()
 
 if check_auto_flag() == '1':
-    if check_config_present() == False:
-        print("Log error to excel placeholder")
-    elif check_data_present() == False:
-        print("Log error to excel placeholder")
+    
+    load_config()
+    if check_data_present() == False:
+        print("No data.json found. Updating...")
+        save_current_files_to_data()
+    
+    load_data()
+    populate_data()
+
+    if check_dir_for_changes() == True:
+        print('File Changes are detected. Syncing...')
+        sync(source_path, target_path, 'sync', create=True)
+
     else:
-        load_config()
-        load_data()
+        print('No File changes detected since last ran.')
 
-        if check_dir_for_changes() == True:
-            print('File Changes are detected. Syncing...')
-            sync(source_path, target_path, 'sync', create=True)
-            
-        else:
-            print('No File changes detected since last ran.')
-
-        populate_data()
-        save_data_to_cvs(new_files_list)
-        print('File data updated. Exiting...')
-        time.sleep(1)
-        quit()
+    save_data_to_cvs(new_files_list)
+    print('Any file change has been recorded to the .csv file | Exiting...')
+    time.sleep(1)
+    quit()        
 
 if check_config_present() == False:
     first_ran_func()
     user_input()
     config_save('0')
-else:
-    load_config()
-ask_user_sync()
 
-if ask_user_sync_anwser == 'y':
+check_data_present()
+
+if ask_user_sync() == 'y':
     try:
         sync(source_path, target_path, 'sync', create=True)
     except ValueError as exception:
         print('There was a problem with loading the config, please reconfigure the source and target path values.\n')
         print(r'For example: Correct input format - C:\Users\Mike\Documents\Source_Copy')
         quit()
-    else:
-        print('Unknow sync error, exiting')
-        quit()
 else:
     user_input()
     config_save('0')
+    ask_user_automation()
+    quit()
 
+load_data()
 populate_data()
 
 save_data_to_cvs(new_files_list)
 
+ask_user_automation()
+
 #source_path = 'C:\Users\Mike\Documents\Source_Copy'
 #target_path = 'C:\Users\Mike\Documents\Dest_Copy'
+
+#C:\Users\Mike\Desktop\Test copy
+#C:\Users\Mike\Desktop\Test -aste
