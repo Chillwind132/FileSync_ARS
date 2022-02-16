@@ -10,6 +10,7 @@ import pathlib
 import jsonpickle
 import time
 import csv  
+import wmi
 
 
 def check_config_present():
@@ -84,6 +85,7 @@ def config_save(auto_flag):
         r"source_path": source_path,
         r"target_path": target_path,
         r'Automation Flag': auto_flag,
+        r'Drive Volume': source_volume_name,
     }
     json_string = json.dumps(data)
     with open("config.json", "w") as jsonfile:
@@ -189,6 +191,7 @@ def ask_user_automation():
         print('Invalid input')
         ask_user_automation_anwser = input("Would you like to convert this script to monitor mode and set auto_flag = 1. Type y/n\n").strip()
     if ask_user_automation_anwser == 'y':
+        drive_volume_to_monitor()
         config_save('1')
         print("Automation mode enabled and saved to config.json.")
         print("You can disable it by setting auto_flag property back to '0' ")
@@ -293,6 +296,32 @@ def create_csv_header():
 def convertTuple(tup):
     st = ''.join(map(str, tup))
     return st      
+
+
+def drive_volume_to_monitor():
+    c = wmi.WMI()
+    global source_volume_name
+    global Driv_Letter
+    valid = False
+    source_volume_name = input("Enter Drive volume name to monitor\n").strip()
+    for drive in c.Win32_LogicalDisk():
+        if source_volume_name == drive.VolumeName:
+            print("Drive volume name is valid")
+            valid = True
+            x = 0
+            Driv_Letter = []
+            Driv_Letter.append(drive.Caption) 
+            x = x + 1
+    if valid != True:
+        print("Drive Volume Name is not found")
+
+    proceed_check = input("Would you like to proceed?Type y/n\n").strip()
+    while proceed_check != 'y' and proceed_check != 'n':
+        print('Invalid input')
+        proceed_check = input("Would you still like to proceed Type y/n\n").strip()
+        if proceed_check == 'y':
+            print(source_volume_name)
+
 
 
 
