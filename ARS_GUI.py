@@ -111,6 +111,7 @@ class Ui_MainWindow(object):
         
         self.lineEdit = QtWidgets.QLineEdit(self.widget)
         self.lineEdit.setObjectName("lineEdit")
+
         self.lineEdit.textEdited.connect(self._text_Edited)
 
 
@@ -157,9 +158,19 @@ class Ui_MainWindow(object):
         self.toolButtonOpenDialog_5 = QtWidgets.QPushButton(self.widget)
         self.toolButtonOpenDialog_5.setObjectName("toolButtonOpenDialog_5")
         self.formLayout_4.setWidget(7, QtWidgets.QFormLayout.FieldRole, self.toolButtonOpenDialog_5)
+
+        self.label = QtWidgets.QLabel(self.widget)
+        self.label.setObjectName("label")
+        self.formLayout_4.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.label)
+
         self.pushButton_6 = QtWidgets.QPushButton(self.widget)
         self.pushButton_6.setObjectName("pushButton_6")
         self.formLayout_4.setWidget(7, QtWidgets.QFormLayout.LabelRole, self.pushButton_6)
+
+        self.label_2 = QtWidgets.QLabel(self.widget)
+        self.label_2.setObjectName("label_2")
+        self.formLayout_4.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.label_2)
+
         TestQFileDialog.setCentralWidget(self.Widget)
         self.menubar = QtWidgets.QMenuBar(TestQFileDialog)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 295, 21))
@@ -174,7 +185,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, TestQFileDialog):
         _translate = QtCore.QCoreApplication.translate
-        TestQFileDialog.setWindowTitle(_translate("TestQFileDialog", "MainWindow"))
+        TestQFileDialog.setWindowTitle(_translate("TestQFileDialog", "ARS Sync"))
         self.toolButtonOpenDialog.setText(_translate("TestQFileDialog", "..."))
         self.toolButtonOpenDialog_2.setText(_translate("TestQFileDialog", "..."))
         self.toolButtonOpenDialog_3.setText(_translate("TestQFileDialog", "Sync"))
@@ -182,9 +193,12 @@ class Ui_MainWindow(object):
 
         self.toolButtonOpenDialog_4.setText(_translate("TestQFileDialog", "Generate Monitor Script"))
         self.toolButtonOpenDialog_4.setDisabled(True)
+
         self.toolButtonOpenDialog_5.setText(_translate("TestQFileDialog", "Button_2"))
         self.pushButton_6.setText(_translate("TestQFileDialog", "Button_1"))
 
+        self.label.setText(_translate("TestQFileDialog", "Source Directory"))
+        self.label_2.setText(_translate("TestQFileDialog", "Target Directory"))
 
 if __name__ == "__main__":
     
