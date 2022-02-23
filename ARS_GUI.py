@@ -15,6 +15,7 @@ from dirsync import sync
 from PyQt5.QtCore import QSize
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from pathlib import Path
 
 import threading
 
@@ -22,7 +23,7 @@ import threading
 class Ui_MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
-        # Call the inherited classes __init__ method
+        
         super(Ui_MainWindow, self).__init__()
         uic.loadUi('ARS.ui', self)  # Load the .ui file
 
@@ -46,24 +47,30 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.button_sync = self.findChild(
             QtWidgets.QPushButton, "toolButtonOpenDialog_3")
         self.button_sync.clicked.connect(self._sync_directory)
+        self.button_sync.setDisabled(True)
 
         self.button_generate_mscript = self.findChild(
             QtWidgets.QPushButton, "toolButtonOpenDialog_4")
         self.button_generate_mscript.clicked.connect(self._enable_auto_flag)
         self.button_generate_mscript.clicked.connect(self._generate_auto_py)
+        self.button_generate_mscript.setDisabled(True)
 
         self.button_launch_watchdog = self.findChild(
             QtWidgets.QPushButton, "toolButtonOpenDialog_5")
         self.button_launch_watchdog.clicked.connect(self._run_watchdog)
+        self.button_launch_watchdog.setDisabled(True)
+
 
         self.button_select_drive = self.findChild(
             QtWidgets.QPushButton, "pushButton_6")
         self.button_select_drive.clicked.connect(self.show_new_window)
 
         self.lineEdit_source = self.findChild(QtWidgets.QLineEdit, "lineEdit")
+        self.lineEdit_source.textEdited.connect(self._text_Edited)
 
         self.lineEdit_target = self.findChild(
             QtWidgets.QLineEdit, "lineEdit_2")
+        self.lineEdit_target.textEdited.connect(self._text_Edited)
 
         self.textEdit_m = self.findChild(QtWidgets.QTextEdit, "textEdit")
 
@@ -76,7 +83,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         global text_s
         text_s = self.text_s = source_path
 
-        if os.path.isdir(self.text_t) == True and os.path.isdir(self.text_s) == True:
+        if os.path.isdir(self.text_t) is True and os.path.isdir(self.text_s) is True:
             self.button_sync.setDisabled(False)
             self.button_generate_mscript.setDisabled(False)
             self.button_launch_watchdog.setDisabled(False)
@@ -88,7 +95,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         global text_t
         text_t = self.text_t = target_path
 
-        if os.path.isdir(self.text_t) == True and os.path.isdir(self.text_s) == True:
+        if os.path.isdir(self.text_t) is True and os.path.isdir(self.text_s) is True:
             self.button_sync.setDisabled(False)
             self.button_generate_mscript.setDisabled(False)
             self.button_launch_watchdog.setDisabled(False)
@@ -121,10 +128,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         global text_s, text_t, py_data
         filename_py = "scripts/exec.py"
         file_name_conf = "scripts/config.json"
-
+        self.txt_g = Path("py_data").read_text()
         os.makedirs(os.path.dirname(filename_py), exist_ok=True)
         with open(filename_py, "w") as f:
-            f.write(py_data)
+            f.write(self.txt_g)
 
         data = {
             r"source_path": text_s,
@@ -140,12 +147,12 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         global text_s, text_t
         text_s = self.text_s = self.lineEdit_source.text()
         text_t = self.text_t = self.lineEdit_target.text()
-        if os.path.isdir(text_t) == False or os.path.isdir(text_s) == False:
+        if os.path.isdir(text_t) is False or os.path.isdir(text_s) is False:
             self.button_sync.setDisabled(True)
             self.button_generate_mscript.setDisabled(True)
             self.button_launch_watchdog.setDisabled(True)
             print("ONE OFF")
-        elif os.path.isdir(self.text_t) == True and os.path.isdir(self.text_t) == True:
+        elif os.path.isdir(self.text_t) is True and os.path.isdir(self.text_t) is True:
             self.button_sync.setDisabled(False)
             self.button_generate_mscript.setDisabled(False)
             self.button_launch_watchdog.setDisabled(False)
@@ -157,20 +164,13 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         thread1 = myThread(1, "Thread-1", 1)
 
         if stop_threads == "1":
-
-            stop_threads = False
-
             thread1.start()
-
             stop_threads = "0"
             self.button_launch_watchdog.setText(
                 _translate("TestQFileDialog", "Watchdog running..."))
             self.textEdit_m.setText('{}'.format(
                 "Watchdog is currently monitoring the target directory for changes and syncing any changes automatiicaly"))
         else:
-
-            stop_threads = True
-
             stop_threads = "1"
 
             self.button_launch_watchdog.setText(
@@ -181,25 +181,16 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     def show_new_window(self, checked):
         if self.l is True:
             self.win = AnotherWindow()
-
             self.win.show()
-
         else:
             self.l.close()  # Close window.
             self.l = True
 
 
 class AnotherWindow(QtWidgets.QDialog):
-    """
-    This "window" is a QWidget. If it has no parent, it
-    will appear as a free-floating window as we want.
-    """
-
     def __init__(self):
         super(AnotherWindow, self).__init__()
-
         uic.loadUi('Dialog.ui', self)  # Load the .ui file
-
 
 class Watcher(Ui_MainWindow):
 
@@ -215,7 +206,6 @@ class Watcher(Ui_MainWindow):
 
         try:
             while True:
-
                 print("\nWatcher Running in {}/\n".format(self.directory))
                 time.sleep(1)
                 global stop_threads
