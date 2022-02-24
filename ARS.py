@@ -310,7 +310,7 @@ def drive_volume_to_monitor():
             valid = True
             x = 0
             Driv_Letter = []
-            Driv_Letter.append(drive.Caption) 
+            Driv_Letter.append(drive.Caption, drive.VolumeName)
             x = x + 1
     if valid != True:
         print("Drive Volume Name is not found")

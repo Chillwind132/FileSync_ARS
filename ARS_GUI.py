@@ -1,4 +1,5 @@
 import csv
+import re
 import wmi
 import pathlib
 import os.path
@@ -15,6 +16,7 @@ from dirsync import sync
 from PyQt5.QtCore import QSize
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from PyQt5.QtWidgets import (QWidget, QListWidget, QVBoxLayout, QApplication)
 from pathlib import Path
 
 import threading
@@ -182,16 +184,79 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         if self.l is True:
             self.win = AnotherWindow()
             self.win.show()
+            
         else:
             self.l.close()  # Close window.
             self.l = True
 
+    
+    
+        
 
 class AnotherWindow(QtWidgets.QDialog):
     def __init__(self):
         super(AnotherWindow, self).__init__()
         uic.loadUi('Dialog.ui', self)  # Load the .ui file
+        
+        self.drive_volume_to_monitor()
+        
 
+
+    def drive_volume_to_monitor(self):
+        c = wmi.WMI()
+        
+        for drive in c.Win32_LogicalDisk():
+            drive_letter = str(drive.Caption) + str(drive.VolumeName)
+            self.listWidget.addItem(drive_letter)
+            print(drive_letter)
+
+        self.listWidget.itemSelectionChanged.connect(self.selectionChanged)
+        self.pushButton_select.setDisabled(True)
+        self.commandLinkButton_go.setDisabled(True)
+        self.pushButton_select.clicked.connect(self.target_directory_select)
+        self.commandLinkButton_go.clicked.connect(self.close_window)
+    def UiComponents(self):
+        self.listWidget = self.findChild(QtWidgets.QListWidget, "listWidget")
+        self.lineEdit = self.findChild(QtWidgets.QLineEdit, "lineEdit")
+        self.commandLinkButton_go = self.findChild(QtWidgets.QCommandLinkButton, "commandLinkButton_go")
+        self.pushButton_select = self.findChild(QtWidgets.QPushButton, "pushButton_select")
+        
+        
+
+    def selectionChanged(self):
+        v = str(self.listWidget.currentItem().text())
+        global current_drive_index
+        current_drive_index = re.split('[:]', v)
+        current_drive_index[0] += ":\\"
+        current_drive_index[1] = "[" + current_drive_index[1] + "]"
+        self.lineEdit.setText('{}'.format(current_drive_index[1]))
+        print(current_drive_index)  # ['E:\\', '[USB_MIKE]']
+        self.pushButton_select.setDisabled(False)
+        
+        
+
+    def close_window(self):
+        
+        self.close()
+    
+    def target_directory_select(self):
+
+        target_path = str(QtWidgets.QFileDialog.getExistingDirectory(None, "", current_drive_index[0]))
+        if os.path.isdir(target_path) is True:
+            self.commandLinkButton_go.setDisabled(False)
+            append_index = re.split('[:]', target_path)
+            append_index[0] = current_drive_index[1]
+            print(append_index)  # ['[USB_MIKE]', '/Test_Folder']
+
+            view_index = (''.join(str(x) for x in append_index))
+
+            self.lineEdit.setText('{}'.format(view_index))
+        else:
+            return
+        
+
+    
+        
 class Watcher(Ui_MainWindow):
 
     def __init__(self, directory=".", handler=FileSystemEventHandler()):
@@ -222,9 +287,7 @@ class Watcher(Ui_MainWindow):
 class MyHandler(FileSystemEventHandler):
 
     def on_any_event(self, event):
-        print("Files Changed")  # Code here
-        global text_s, text_t, stop_threads
-
+        global text_s, text_t
         sync(text_s, text_t, 'sync', create=True)
 
 
@@ -244,7 +307,7 @@ class myThread (threading.Thread):
            w = Watcher(".", MyHandler())
            w.run()
            print("Exiting " + self.name)
-           global stop_threads
+           
            if stop_threads:
                return
 
