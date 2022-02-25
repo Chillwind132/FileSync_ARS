@@ -1,22 +1,19 @@
-import csv
+
 import re
 import wmi
-import pathlib
 import os.path
-from datetime import datetime
-from tkinter import N
-from pickle import FALSE, TRUE
 import time
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
 import json
 import os
 import sys
+from datetime import datetime
+from tkinter import N
+from pickle import FALSE, TRUE
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 from dirsync import sync
-from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtWidgets import (QWidget, QListWidget, QVBoxLayout, QApplication)
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QApplication
 from pathlib import Path
 
 import threading
@@ -28,14 +25,15 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         
         super(Ui_MainWindow, self).__init__()
         uic.loadUi('ARS.ui', self)  # Load the .ui file
-
+        global stop_threads, text_t, text_s
         self.auto_flag = "0"
         self.text_g = ""
-        self.text_s = ""
-        self.text_t = ""
+        self.text_s = text_s = ""
+        self.text_t = text_t = ""
+        self.stop_threads_2 = "0"
         self.l = True
-
-        global stop_threads
+        self.selected_drive = ""
+        
         stop_threads = "1"
 
         self.button_source = self.findChild(
@@ -60,7 +58,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.button_launch_watchdog = self.findChild(
             QtWidgets.QPushButton, "toolButtonOpenDialog_5")
         self.button_launch_watchdog.clicked.connect(self._run_watchdog)
-        self.button_launch_watchdog.setDisabled(True)
+        self.button_launch_watchdog.setDisabled(False)
 
 
         self.button_select_drive = self.findChild(
@@ -76,6 +74,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
         self.textEdit_m = self.findChild(QtWidgets.QTextEdit, "textEdit")
 
+        
         self.show()
 
     def _open_file_dialog_source(self):  # function to open the dialog window
@@ -182,19 +181,53 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
     def show_new_window(self, checked):
         if self.l is True:
-            self.win = AnotherWindow()
-            self.win.show()
-            
+            win = AnotherWindow(self)
+            win.exec_()
+            self.v = str(win.listWidget.currentItem().text())
+            self.p = win.lineEdit.text()
+            self.selected_drive_index = re.split('[:]', self.v)
+            self.selected_drive_index[0] += ":" # Selected Drive
+            self.selected_drive = self.selected_drive_index[0]
+            self.pre_populate_data()
+
         else:
             self.l.close()  # Close window.
+            
             self.l = True
 
-    
+    def pre_populate_data(self):
+        c = wmi.WMI()
+        for drive in c.Win32_LogicalDisk():
+            if drive.Caption == self.selected_drive:
+                print(drive.Caption)
+                print(self.selected_drive)
+
+                drive_brackets = "[" + str(drive.VolumeName) + "]"
+
+                self.test = drive.Caption + self.remove_prefix(
+                    self.p, drive_brackets)
+                print(drive_brackets)
+                print(self.test)
+                text_s = self.text_s = self.test
+                self.lineEdit_source.setText('{}'.format(self.test))
+            else:
+                print("no luck")
+
+    def remove_prefix(self, text, prefix):
+        return text[text.startswith(prefix) and len(prefix):]
+
+    def are_paths_valid(self):
+        if os.path.isdir(text_t) is True and os.path.isdir(text_s) is True:
+            self.button_sync.setDisabled(False)
+            self.button_generate_mscript.setDisabled(False)
+            self.button_launch_watchdog.setDisabled(False)
+            return True
+
     
         
 
 class AnotherWindow(QtWidgets.QDialog):
-    def __init__(self):
+    def __init__(self, parent=Ui_MainWindow):
         super(AnotherWindow, self).__init__()
         uic.loadUi('Dialog.ui', self)  # Load the .ui file
         
@@ -208,11 +241,11 @@ class AnotherWindow(QtWidgets.QDialog):
         for drive in c.Win32_LogicalDisk():
             drive_letter = str(drive.Caption) + str(drive.VolumeName)
             self.listWidget.addItem(drive_letter)
-            print(drive_letter)
+            
 
         self.listWidget.itemSelectionChanged.connect(self.selectionChanged)
-        self.pushButton_select.setDisabled(True)
-        self.commandLinkButton_go.setDisabled(True)
+        self.pushButton_select.setDisabled(False) # Temp
+        self.commandLinkButton_go.setDisabled(False)  # Temp
         self.pushButton_select.clicked.connect(self.target_directory_select)
         self.commandLinkButton_go.clicked.connect(self.close_window)
     def UiComponents(self):
@@ -225,12 +258,11 @@ class AnotherWindow(QtWidgets.QDialog):
 
     def selectionChanged(self):
         v = str(self.listWidget.currentItem().text())
-        global current_drive_index
+        global current_drive_index# ['E:\\', '[USB_MIKE]']
         current_drive_index = re.split('[:]', v)
         current_drive_index[0] += ":\\"
         current_drive_index[1] = "[" + current_drive_index[1] + "]"
-        self.lineEdit.setText('{}'.format(current_drive_index[1]))
-        print(current_drive_index)  # ['E:\\', '[USB_MIKE]']
+        self.lineEdit.setText('{}'.format(current_drive_index[1])) 
         self.pushButton_select.setDisabled(False)
         
         
@@ -238,19 +270,23 @@ class AnotherWindow(QtWidgets.QDialog):
     def close_window(self):
         
         self.close()
+        
     
     def target_directory_select(self):
-
-        target_path = str(QtWidgets.QFileDialog.getExistingDirectory(None, "", current_drive_index[0]))
+        
+        global text_s
+        target_path = text_s = str(QtWidgets.QFileDialog.getExistingDirectory(
+            None, "", current_drive_index[0]))
         if os.path.isdir(target_path) is True:
-            self.commandLinkButton_go.setDisabled(False)
+            self.commandLinkButton_go.setDisabled(False) 
             append_index = re.split('[:]', target_path)
             append_index[0] = current_drive_index[1]
-            print(append_index)  # ['[USB_MIKE]', '/Test_Folder']
+             # ['[USB_MIKE]', '/Test_Folder']
 
             view_index = (''.join(str(x) for x in append_index))
 
             self.lineEdit.setText('{}'.format(view_index))
+            
         else:
             return
         
@@ -266,6 +302,16 @@ class Watcher(Ui_MainWindow):
         self.directory = text_s
 
     def run(self):
+        global text_s, text_t
+        while self.is_drive_connected() != True: ## Loop to detect target drive connection
+            
+            print("NOT CONNECTED", text_s, text_t)
+            time.sleep(0.5)
+        print("drive connected")
+        
+        sync(text_s, text_t, 'sync', create=True)
+
+
         self.observer.schedule(self.handler, self.directory, recursive=True)
         self.observer.start()
 
@@ -282,6 +328,11 @@ class Watcher(Ui_MainWindow):
             self.observer.stop()
             self.observer.join()
         print("\nWatcher Terminated\n")
+
+    def is_drive_connected(self):
+        global text_s, text_t
+        if os.path.isdir(text_s) is True and os.path.isdir(text_t) is True:
+            return True
 
 
 class MyHandler(FileSystemEventHandler):
