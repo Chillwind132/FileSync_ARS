@@ -68,7 +68,7 @@
      <item row="7" column="0">
       <widget class="QPushButton" name="pushButton_6">
        <property name="text">
-        <string>Button_1</string>
+        <string>Select </string>
        </property>
       </widget>
      </item>

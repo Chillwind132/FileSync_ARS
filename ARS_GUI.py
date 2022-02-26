@@ -58,7 +58,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.button_launch_watchdog = self.findChild(
             QtWidgets.QPushButton, "toolButtonOpenDialog_5")
         self.button_launch_watchdog.clicked.connect(self._run_watchdog)
-        self.button_launch_watchdog.setDisabled(False)
+        self.button_launch_watchdog.setDisabled(True)
 
 
         self.button_select_drive = self.findChild(
@@ -74,7 +74,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
         self.textEdit_m = self.findChild(QtWidgets.QTextEdit, "textEdit")
 
-        
+        self.textEdit_m.setText('{}'.format(
+            "1) Select your source and target directory for data synchronisation.\n2) If you wish, you have an option to sync to a removable media on connection - set this up by clicking on the 'select' button.\n3) Generate monitor script option is made to be launched at a specific time intervals.\n4) Watchdog is newer and therefore recommended to use."))
         self.show()
 
     def _open_file_dialog_source(self):  # function to open the dialog window
@@ -116,13 +117,13 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.button_generate_mscript.setText(
                 _translate("TestQFileDialog", "Manual Mode"))
             self.textEdit_m.setText('{}'.format(
-                "Manual Mode enabled. Run the generated file to change the set configuration through CMD "))
+                "Manual Mode enabled. Run the generated file to change the set configuration through CMD."))
         else:
             self.auto_flag = "1"
             self.button_generate_mscript.setText(
                 _translate("TestQFileDialog", "Auto = ON"))
             self.textEdit_m.setText('{}'.format(
-                "Automode Enabled. You can fild the generated script in PATH. Feel free to add it to your task schedular or etc... "))
+                "Automation mode enabled. You can find the generated script in PATH. Feel free to add it to your task scheduler or etc..."))
         print("Autoflag set to:", self.auto_flag)
 
     def _generate_auto_py(self):
@@ -170,17 +171,19 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.button_launch_watchdog.setText(
                 _translate("TestQFileDialog", "Watchdog running..."))
             self.textEdit_m.setText('{}'.format(
-                "Watchdog is currently monitoring the target directory for changes and syncing any changes automatiicaly"))
+                "Watchdog is currently monitoring the target directory for changes and syncing any changes automatically."))
         else:
             stop_threads = "1"
 
             self.button_launch_watchdog.setText(
                 _translate("TestQFileDialog", "Watchdog disabled"))
             self.textEdit_m.setText('{}'.format(
-                "Watchdog has been disabled - click the button again to re-activate"))
+                "Watchdog has been disabled - click the button again to re-activate."))
 
     def show_new_window(self, checked):
         if self.l is True:
+            self.textEdit_m.setText('{}'.format(
+                "Select a removable media drive(USB, Portable SSD etc...) that you would like to monitor and sync on connection. You can specify a directory within the drive if you wish. This feature is made to work in conjunction with the ARS watchdog."))
             win = AnotherWindow(self)
             win.exec_()
             self.v = str(win.listWidget.currentItem().text())
@@ -244,8 +247,8 @@ class AnotherWindow(QtWidgets.QDialog):
             
 
         self.listWidget.itemSelectionChanged.connect(self.selectionChanged)
-        self.pushButton_select.setDisabled(False) # Temp
-        self.commandLinkButton_go.setDisabled(False)  # Temp
+        self.pushButton_select.setDisabled(True) # Temp
+        self.commandLinkButton_go.setDisabled(True)  # Temp
         self.pushButton_select.clicked.connect(self.target_directory_select)
         self.commandLinkButton_go.clicked.connect(self.close_window)
     def UiComponents(self):
@@ -290,8 +293,6 @@ class AnotherWindow(QtWidgets.QDialog):
         else:
             return
         
-
-    
         
 class Watcher(Ui_MainWindow):
 

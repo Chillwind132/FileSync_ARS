@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>312</width>
-    <height>270</height>
+    <width>332</width>
+    <height>265</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>312</width>
-    <height>270</height>
+    <width>332</width>
+    <height>265</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>312</width>
-    <height>270</height>
+    <width>332</width>
+    <height>265</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -28,33 +28,17 @@
   <property name="layoutDirection">
    <enum>Qt::LeftToRight</enum>
   </property>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>10</x>
      <y>10</y>
-     <width>275</width>
-     <height>249</height>
+     <width>311</width>
+     <height>241</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0" colspan="2">
-     <widget class="QListWidget" name="listWidget"/>
-    </item>
-    <item row="2" column="0" colspan="2">
-     <widget class="QLineEdit" name="lineEdit"/>
-    </item>
-    <item row="3" column="1">
-     <widget class="QCommandLinkButton" name="commandLinkButton_go">
-      <property name="layoutDirection">
-       <enum>Qt::RightToLeft</enum>
-      </property>
-      <property name="text">
-       <string>Complete</string>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="0">
+    <item row="10" column="0">
      <widget class="QPushButton" name="pushButton_select">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -64,6 +48,46 @@
       </property>
       <property name="text">
        <string>Select Path</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0" colspan="3">
+     <widget class="QListWidget" name="listWidget"/>
+    </item>
+    <item row="10" column="1" colspan="2">
+     <widget class="QCommandLinkButton" name="commandLinkButton_go">
+      <property name="layoutDirection">
+       <enum>Qt::RightToLeft</enum>
+      </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>Complete</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0" colspan="3">
+     <widget class="QLineEdit" name="lineEdit"/>
+    </item>
+    <item row="1" column="0">
+     <widget class="QCheckBox" name="checkBox">
+      <property name="text">
+       <string>Source Sync</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QCheckBox" name="checkBox_2">
+      <property name="text">
+       <string>Target Sync</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="2">
+     <widget class="QCheckBox" name="checkBox_3">
+      <property name="text">
+       <string>Validate</string>
       </property>
      </widget>
     </item>
