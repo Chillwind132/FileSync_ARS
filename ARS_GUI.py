@@ -25,7 +25,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         
         super(Ui_MainWindow, self).__init__()
         uic.loadUi('ARS.ui', self)  # Load the .ui file
-        global stop_threads, text_t, text_s
+        global stop_threads, text_t, text_s, toggle
         self.auto_flag = "0"
         self.text_g = ""
         self.text_s = text_s = ""
@@ -35,6 +35,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.selected_drive = ""
         
         stop_threads = "1"
+        toggle = ""
 
         self.button_source = self.findChild(
             QtWidgets.QPushButton, "toolButtonOpenDialog")
@@ -211,8 +212,16 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     self.p, drive_brackets)
                 print(drive_brackets)
                 print(self.test)
-                text_s = self.text_s = self.test
-                self.lineEdit_source.setText('{}'.format(self.test))
+                if toggle == "source":
+                    text_s = self.text_s = self.test
+                    self.lineEdit_source.setText('{}'.format(self.test))
+                elif toggle == "target":
+                    text_t = self.text_t = self.test
+                    self.lineEdit_target.setText('{}'.format(self.test))
+                else:
+                    return
+
+                    
             else:
                 print("no luck")
 
@@ -226,8 +235,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.button_launch_watchdog.setDisabled(False)
             return True
 
-    
-        
 
 class AnotherWindow(QtWidgets.QDialog):
     def __init__(self, parent=Ui_MainWindow):
@@ -236,28 +243,30 @@ class AnotherWindow(QtWidgets.QDialog):
         
         self.drive_volume_to_monitor()
         
-
-
     def drive_volume_to_monitor(self):
         c = wmi.WMI()
         
         for drive in c.Win32_LogicalDisk():
             drive_letter = str(drive.Caption) + str(drive.VolumeName)
             self.listWidget.addItem(drive_letter)
-            
-
+        
         self.listWidget.itemSelectionChanged.connect(self.selectionChanged)
         self.pushButton_select.setDisabled(True) # Temp
         self.commandLinkButton_go.setDisabled(True)  # Temp
         self.pushButton_select.clicked.connect(self.target_directory_select)
         self.commandLinkButton_go.clicked.connect(self.close_window)
+        self.checkBox.toggled.connect(self.checkbox_function)
+        self.checkBox_2.toggled.connect(self.checkbox_function_2)
+        
     def UiComponents(self):
         self.listWidget = self.findChild(QtWidgets.QListWidget, "listWidget")
         self.lineEdit = self.findChild(QtWidgets.QLineEdit, "lineEdit")
         self.commandLinkButton_go = self.findChild(QtWidgets.QCommandLinkButton, "commandLinkButton_go")
         self.pushButton_select = self.findChild(QtWidgets.QPushButton, "pushButton_select")
-        
-        
+        self.checkBox = self.findChild(QtWidgets.QCheckBox, "checkBox")
+        self.checkBox_2 = self.findChild(QtWidgets.QCheckBox, "checkBox_2")
+        self.checkBox.setEnabled(False)
+        self.checkBox_2.setEnabled(False)
 
     def selectionChanged(self):
         v = str(self.listWidget.currentItem().text())
@@ -266,29 +275,69 @@ class AnotherWindow(QtWidgets.QDialog):
         current_drive_index[0] += ":\\"
         current_drive_index[1] = "[" + current_drive_index[1] + "]"
         self.lineEdit.setText('{}'.format(current_drive_index[1])) 
+        self.checkBox.setChecked(False)
+        self.checkBox_2.setChecked(False)
         self.pushButton_select.setDisabled(False)
         
+    def checkbox_function(self):
+        if self.checkBox.isChecked() :
+            self.checkBox_2.setChecked(False)
+            global toggle
+            toggle = "source"
         
-
+    def checkbox_function_2(self):
+        if self.checkBox_2.isChecked() :
+            self.checkBox.setChecked(False)
+            global toggle
+            toggle = "target"
+        
     def close_window(self):
         
         self.close()
         
     
     def target_directory_select(self):
+        if self.checkBox.isChecked():
+            global text_s
+            
+            target_path = text_s = str(QtWidgets.QFileDialog.getExistingDirectory(
+                None, "", current_drive_index[0]))
+            if os.path.isdir(target_path) is True:
+                self.commandLinkButton_go.setDisabled(False) 
+                append_index = re.split('[:]', target_path)
+                append_index[0] = current_drive_index[1]
+                 # ['[USB_MIKE]', '/Test_Folder']
+
+                view_index = (''.join(str(x) for x in append_index))
+            try:
+                self.lineEdit.setText('{}'.format(view_index))
+            except:
+                text_s = ""
+                return
+            
+            print("SOURCE")
+        if self.checkBox_2.isChecked():
+            global text_t
+            
+            target_path = text_t = str(QtWidgets.QFileDialog.getExistingDirectory(
+                None, "", current_drive_index[0]))
+            if os.path.isdir(target_path) is True:
+                self.commandLinkButton_go.setDisabled(False) 
+                append_index = re.split('[:]', target_path)
+                append_index[0] = current_drive_index[1]
+                 # ['[USB_MIKE]', '/Test_Folder']
+
+                view_index = (''.join(str(x) for x in append_index))
+            try:
+                self.lineEdit.setText('{}'.format(view_index))
+            except:
+                text_t =""
+                return
+            
+            print("TARGET")
+
         
-        global text_s
-        target_path = text_s = str(QtWidgets.QFileDialog.getExistingDirectory(
-            None, "", current_drive_index[0]))
-        if os.path.isdir(target_path) is True:
-            self.commandLinkButton_go.setDisabled(False) 
-            append_index = re.split('[:]', target_path)
-            append_index[0] = current_drive_index[1]
-             # ['[USB_MIKE]', '/Test_Folder']
 
-            view_index = (''.join(str(x) for x in append_index))
-
-            self.lineEdit.setText('{}'.format(view_index))
             
         else:
             return
