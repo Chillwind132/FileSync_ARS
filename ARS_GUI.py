@@ -1,4 +1,4 @@
-
+from lib2to3.pytree import LeafPattern
 import re
 import wmi
 import os.path
@@ -13,7 +13,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from dirsync import sync
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QApplication
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QApplication, QAction, QMessageBox
 from pathlib import Path
 
 import threading
@@ -25,7 +25,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         
         super(Ui_MainWindow, self).__init__()
         uic.loadUi('ARS.ui', self)  # Load the .ui file
-        global stop_threads, text_t, text_s, toggle
+        global stop_threads, text_t, text_s, toggle, is_closed
         self.auto_flag = "0"
         self.text_g = ""
         self.text_s = text_s = ""
@@ -36,6 +36,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         
         stop_threads = "1"
         toggle = ""
+        is_closed = True
 
         self.button_source = self.findChild(
             QtWidgets.QPushButton, "toolButtonOpenDialog")
@@ -75,9 +76,23 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
         self.textEdit_m = self.findChild(QtWidgets.QTextEdit, "textEdit")
 
+        self.checkBox_override = self.findChild(
+            QtWidgets.QCheckBox, "checkBox_override")
+        self.checkBox_override.stateChanged.connect(self._manual_override)
+
         self.textEdit_m.setText('{}'.format(
             "1) Select your source and target directory for data synchronisation.\n2) If you wish, you have an option to sync to a removable media on connection - set this up by clicking on the 'select' button.\n3) Generate monitor script option is made to be launched at a specific time intervals.\n4) Watchdog is newer and therefore recommended to use."))
         self.show()
+
+    def _manual_override(self):
+        if self.checkBox_override.isChecked():
+            self.button_launch_watchdog.setDisabled(False)
+            self.button_generate_mscript.setDisabled(False)
+            self.button_sync.setDisabled(False)
+        else:
+            self.button_launch_watchdog.setDisabled(True)
+            self.button_generate_mscript.setDisabled(True)
+            self.button_sync.setDisabled(True)
 
     def _open_file_dialog_source(self):  # function to open the dialog window
         source_path = str(QtWidgets.QFileDialog.getExistingDirectory())
@@ -182,17 +197,28 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 "Watchdog has been disabled - click the button again to re-activate."))
 
     def show_new_window(self, checked):
+        global is_closed
+        is_closed = True
         if self.l is True:
             self.textEdit_m.setText('{}'.format(
                 "Select a removable media drive(USB, Portable SSD etc...) that you would like to monitor and sync on connection. You can specify a directory within the drive if you wish. This feature is made to work in conjunction with the ARS watchdog."))
             win = AnotherWindow(self)
             win.exec_()
-            self.v = str(win.listWidget.currentItem().text())
-            self.p = win.lineEdit.text()
-            self.selected_drive_index = re.split('[:]', self.v)
-            self.selected_drive_index[0] += ":" # Selected Drive
-            self.selected_drive = self.selected_drive_index[0]
-            self.pre_populate_data()
+            self.index = win.listWidget.currentRow()
+            
+            if self.index != -1 and is_closed == False:
+                self.v = str(win.listWidget.currentItem().text())
+                
+
+                self.p = win.lineEdit.text()
+                self.selected_drive_index = re.split('[:]', self.v)
+                self.selected_drive_index[0] += ":" # Selected Drive
+                self.selected_drive = self.selected_drive_index[0]
+                print(self.selected_drive)
+                self.pre_populate_data()
+            if win.checkBox_3.isChecked() == False:
+                self.button_launch_watchdog.setDisabled(False)
+
 
         else:
             self.l.close()  # Close window.
@@ -203,17 +229,18 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         c = wmi.WMI()
         for drive in c.Win32_LogicalDisk():
             if drive.Caption == self.selected_drive:
-                print(drive.Caption)
-                print(self.selected_drive)
+                
+                
 
                 drive_brackets = "[" + str(drive.VolumeName) + "]"
 
-                self.test = drive.Caption + self.remove_prefix(
+                self.test = drive_brackets + self.remove_prefix(
                     self.p, drive_brackets)
-                print(drive_brackets)
-                print(self.test)
+                
                 if toggle == "source":
-                    text_s = self.text_s = self.test
+                    #text_s = drive.Caption + self.remove_prefix(self.p, drive_brackets)
+                    #print (text_s)
+                    self.text_s = self.test
                     self.lineEdit_source.setText('{}'.format(self.test))
                 elif toggle == "target":
                     text_t = self.text_t = self.test
@@ -222,8 +249,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     return
 
                     
-            else:
-                print("no luck")
+            
 
     def remove_prefix(self, text, prefix):
         return text[text.startswith(prefix) and len(prefix):]
@@ -255,9 +281,10 @@ class AnotherWindow(QtWidgets.QDialog):
         self.commandLinkButton_go.setDisabled(True)  # Temp
         self.pushButton_select.clicked.connect(self.target_directory_select)
         self.commandLinkButton_go.clicked.connect(self.close_window)
+    
         self.checkBox.toggled.connect(self.checkbox_function)
         self.checkBox_2.toggled.connect(self.checkbox_function_2)
-        
+        self.checkBox_3.setChecked(True)
     def UiComponents(self):
         self.listWidget = self.findChild(QtWidgets.QListWidget, "listWidget")
         self.lineEdit = self.findChild(QtWidgets.QLineEdit, "lineEdit")
@@ -265,8 +292,9 @@ class AnotherWindow(QtWidgets.QDialog):
         self.pushButton_select = self.findChild(QtWidgets.QPushButton, "pushButton_select")
         self.checkBox = self.findChild(QtWidgets.QCheckBox, "checkBox")
         self.checkBox_2 = self.findChild(QtWidgets.QCheckBox, "checkBox_2")
-        self.checkBox.setEnabled(False)
-        self.checkBox_2.setEnabled(False)
+        self.checkBox_3 = self.findChild(QtWidgets.QCheckBox, "checkBox_3")
+        
+        
 
     def selectionChanged(self):
         v = str(self.listWidget.currentItem().text())
@@ -292,7 +320,8 @@ class AnotherWindow(QtWidgets.QDialog):
             toggle = "target"
         
     def close_window(self):
-        
+        global is_closed
+        is_closed = False
         self.close()
         
     
@@ -302,6 +331,7 @@ class AnotherWindow(QtWidgets.QDialog):
             
             target_path = text_s = str(QtWidgets.QFileDialog.getExistingDirectory(
                 None, "", current_drive_index[0]))
+            
             if os.path.isdir(target_path) is True:
                 self.commandLinkButton_go.setDisabled(False) 
                 append_index = re.split('[:]', target_path)
@@ -309,24 +339,27 @@ class AnotherWindow(QtWidgets.QDialog):
                  # ['[USB_MIKE]', '/Test_Folder']
 
                 view_index = (''.join(str(x) for x in append_index))
+                
             try:
                 self.lineEdit.setText('{}'.format(view_index))
+                
             except:
                 text_s = ""
                 return
             
-            print("SOURCE")
+          
         if self.checkBox_2.isChecked():
             global text_t
             
             target_path = text_t = str(QtWidgets.QFileDialog.getExistingDirectory(
                 None, "", current_drive_index[0]))
+            
             if os.path.isdir(target_path) is True:
                 self.commandLinkButton_go.setDisabled(False) 
                 append_index = re.split('[:]', target_path)
                 append_index[0] = current_drive_index[1]
                  # ['[USB_MIKE]', '/Test_Folder']
-
+                
                 view_index = (''.join(str(x) for x in append_index))
             try:
                 self.lineEdit.setText('{}'.format(view_index))
@@ -334,7 +367,7 @@ class AnotherWindow(QtWidgets.QDialog):
                 text_t =""
                 return
             
-            print("TARGET")
+            
 
         
 
@@ -350,19 +383,24 @@ class Watcher(Ui_MainWindow):
         self.handler = handler
         global text_s
         self.directory = text_s
+        self.valid_path_source = ""
+
+
 
     def run(self):
         global text_s, text_t
+        
         while self.is_drive_connected() != True: ## Loop to detect target drive connection
-            
-            print("NOT CONNECTED", text_s, text_t)
-            time.sleep(0.5)
+            self.volume_letter = self.find_drive()
+            self.valid_path_source = self.get_full_path(self.volume_letter, text_s,"[" + self.volumeN + "]")
+            print("NOT CONNECTED", text_s, text_t, self.valid_path_source)
+            time.sleep(2)
         print("drive connected")
         
-        sync(text_s, text_t, 'sync', create=True)
+        sync(self.valid_path_source, text_t, 'sync', create=True)
 
-
-        self.observer.schedule(self.handler, self.directory, recursive=True)
+        self.observer.schedule(
+            self.handler, self.valid_path_source, recursive=True)
         self.observer.start()
 
         try:
@@ -381,15 +419,39 @@ class Watcher(Ui_MainWindow):
 
     def is_drive_connected(self):
         global text_s, text_t
-        if os.path.isdir(text_s) is True and os.path.isdir(text_t) is True:
+        if os.path.isdir(self.valid_path_source):
             return True
 
+
+
+    def get_drive_letter(self, abb_path):
+        self.m = re.search(r"\[([A-Za-z0-9_]+)\]", abb_path)
+        if self.m:
+            found = self.m.group(1)
+            print(found)
+            return found
+        
+
+    def find_drive(self): ### WORK IN PROGRESS
+        c = wmi.WMI()
+
+        self.volumeN = self.get_drive_letter(text_s)
+        
+        for drive in c.Win32_LogicalDisk():
+            if drive.VolumeName == self.volumeN:
+                print(drive.Caption)
+                return drive.Caption
+
+    def get_full_path(self, drive, text_s, volumeN):
+        self.path = str(drive) + text_s.replace(volumeN, "")
+        print(drive, text_s, volumeN)
+        return self.path
 
 class MyHandler(FileSystemEventHandler):
 
     def on_any_event(self, event):
-        global text_s, text_t
-        sync(text_s, text_t, 'sync', create=True)
+        global text_s, text_t, valid_path_source
+        sync(valid_path_source, text_t, 'sync', create=True)
 
 
 class myThread (threading.Thread):
