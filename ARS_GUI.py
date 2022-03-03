@@ -381,23 +381,28 @@ class Watcher(Ui_MainWindow):
     def __init__(self, directory=".", handler=FileSystemEventHandler()):
         self.observer = Observer()
         self.handler = handler
-        global text_s
+        
         self.directory = text_s
         self.valid_path_source = ""
-
+        self.valid_path_target = ""
+        
 
 
     def run(self):
-        global text_s, text_t
+        global text_s, text_t, valid_path_source_sync, valid_path_target_sync
         
-        while self.is_drive_connected() != True: ## Loop to detect target drive connection
-            self.volume_letter = self.find_drive()
-            self.valid_path_source = self.get_full_path(self.volume_letter, text_s,"[" + self.volumeN + "]")
-            print("NOT CONNECTED", text_s, text_t, self.valid_path_source)
+        while self.is_drive_connected_source() != True and self.is_drive_connected_target() != True:  # Loop to detect target drive connection
+            self.volume_letter_source = self.find_drive_source()
+            self.volume_letter_target = self.find_drive_target()
+            self.valid_path_source = self.get_full_path(self.volume_letter_source, text_s, "[" + str(self.volumeN_source) + "]")
+            self.valid_path_target = self.get_full_path(self.volume_letter_target, text_t,"[" + str(self.volumeN_target) + "]")
+            valid_path_source_sync = self.valid_path_source 
+            valid_path_target_sync = self.valid_path_target 
+            print("NOT CONNECTED", text_s, text_t, valid_path_source_sync, valid_path_target_sync)
             time.sleep(2)
         print("drive connected")
         
-        sync(self.valid_path_source, text_t, 'sync', create=True)
+        sync(self.valid_path_source, self.valid_path_target, 'sync', create=True)
 
         self.observer.schedule(
             self.handler, self.valid_path_source, recursive=True)
@@ -417,11 +422,14 @@ class Watcher(Ui_MainWindow):
             self.observer.join()
         print("\nWatcher Terminated\n")
 
-    def is_drive_connected(self):
+    def is_drive_connected_source(self):
         global text_s, text_t
         if os.path.isdir(self.valid_path_source):
             return True
 
+    def is_drive_connected_target(self):
+        if os.path.isdir(self.valid_path_target):
+            return True
 
 
     def get_drive_letter(self, abb_path):
@@ -432,26 +440,40 @@ class Watcher(Ui_MainWindow):
             return found
         
 
-    def find_drive(self): ### WORK IN PROGRESS
+    def find_drive_source(self): ### WORK IN PROGRESS
         c = wmi.WMI()
 
-        self.volumeN = self.get_drive_letter(text_s)
+        self.volumeN_source = self.get_drive_letter(text_s)
         
         for drive in c.Win32_LogicalDisk():
-            if drive.VolumeName == self.volumeN:
+            if drive.VolumeName == self.volumeN_source:
                 print(drive.Caption)
                 return drive.Caption
 
-    def get_full_path(self, drive, text_s, volumeN):
-        self.path = str(drive) + text_s.replace(volumeN, "")
-        print(drive, text_s, volumeN)
+    def find_drive_target(self): ### WORK IN PROGRESS
+        c = wmi.WMI()
+
+        self.volumeN_target = self.get_drive_letter(text_t)
+        
+        for drive in c.Win32_LogicalDisk():
+            if drive.VolumeName == self.volumeN_target:
+                print(drive.Caption)
+                return drive.Caption
+
+
+    def get_full_path(self, drive, path, volumeN):
+        if os.path.isdir(path):
+            return path
+        self.path = str(drive) + path.replace(volumeN, "")
+        print(drive, path, volumeN)
         return self.path
 
 class MyHandler(FileSystemEventHandler):
 
     def on_any_event(self, event):
-        global text_s, text_t, valid_path_source
-        sync(valid_path_source, text_t, 'sync', create=True)
+        global text_s, text_t, valid_path_source_sync, valid_path_target_sync
+        print(valid_path_source_sync, valid_path_target_sync)
+        sync(valid_path_source_sync, valid_path_target_sync, 'sync', create=True, purge=True)
 
 
 class myThread (threading.Thread):
