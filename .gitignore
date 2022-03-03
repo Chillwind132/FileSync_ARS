@@ -3,3 +3,4 @@ config.json
 file_history.csv
 scripts/exec.py
 scripts/config.json
+data.yml

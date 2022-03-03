@@ -1,4 +1,3 @@
-from lib2to3.pytree import LeafPattern
 import re
 import wmi
 import os.path
@@ -6,6 +5,7 @@ import time
 import json
 import os
 import sys
+import yaml
 from datetime import datetime
 from tkinter import N
 from pickle import FALSE, TRUE
@@ -25,7 +25,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         
         super(Ui_MainWindow, self).__init__()
         uic.loadUi('ARS.ui', self)  # Load the .ui file
-        global stop_threads, text_t, text_s, toggle, is_closed
+        global stop_threads, text_t, text_s, toggle, is_closed, force_file_sync
         self.auto_flag = "0"
         self.text_g = ""
         self.text_s = text_s = ""
@@ -33,10 +33,12 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.stop_threads_2 = "0"
         self.l = True
         self.selected_drive = ""
-        
+        self.parameters = ""
         stop_threads = "1"
         toggle = ""
         is_closed = True
+        force_file_sync = False
+
 
         self.button_source = self.findChild(
             QtWidgets.QPushButton, "toolButtonOpenDialog")
@@ -79,10 +81,65 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.checkBox_override = self.findChild(
             QtWidgets.QCheckBox, "checkBox_override")
         self.checkBox_override.stateChanged.connect(self._manual_override)
+        self.checkBox_force = self.findChild(
+            QtWidgets.QCheckBox, "checkBox_force")
+        self.checkBox_force.stateChanged.connect(self.sync_parameters)
 
         self.textEdit_m.setText('{}'.format(
             "1) Select your source and target directory for data synchronisation.\n2) If you wish, you have an option to sync to a removable media on connection - set this up by clicking on the 'select' button.\n3) Generate monitor script option is made to be launched at a specific time intervals.\n4) Watchdog is newer and therefore recommended to use."))
+        self.first_load()
         self.show()
+
+
+    def first_load(self):
+        if os.path.isfile("data.yml"):
+            with open('data.yml') as outfile:
+                global text_s, text_t
+                doc = yaml.safe_load(outfile)
+                self.text_s = text_s = doc['src']
+                self.text_t = text_t = doc['trg']
+                self.lineEdit_source.setText('{}'.format(doc['src']))
+                self.lineEdit_target.setText('{}'.format(doc['trg']))
+                if os.path.isdir(text_t) is False or os.path.isdir(text_s) is False:
+                    self.button_sync.setDisabled(True)
+                    self.button_generate_mscript.setDisabled(True)
+                    self.button_launch_watchdog.setDisabled(True)
+                    print("ONE OFF")
+                elif os.path.isdir(self.text_t) is True and os.path.isdir(self.text_t) is True:
+                    self.button_sync.setDisabled(False)
+                    self.button_generate_mscript.setDisabled(False)
+                    self.button_launch_watchdog.setDisabled(False)
+                    print("ALL GOOD")
+        else:
+            with open('data.yml', 'w') as outfile:
+                data = {
+                    'src': '', 
+                    'trg': '', 
+                    
+                }
+                yaml.dump(data, outfile)
+
+    def save_to_yaml_s(self, src):
+        with open('data.yml') as outfile:
+           doc = yaml.safe_load(outfile)
+           doc['src'] = src
+        with open('data.yml','w') as outfile:
+            yaml.dump(doc, outfile)
+           
+    def save_to_yaml_t(self, trg):
+        with open('data.yml') as outfile:
+           doc = yaml.safe_load(outfile)
+           doc['trg'] = trg
+        with open('data.yml','w') as outfile:
+            yaml.dump(doc, outfile)
+        
+    def sync_parameters(self):
+        if self.checkBox_force.isChecked():
+            global force_file_sync
+            force_file_sync = True
+            print("force_file_sync enabled")
+        else:
+            force_file_sync = False
 
     def _manual_override(self):
         if self.checkBox_override.isChecked():
@@ -101,6 +158,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         global text_s
         text_s = self.text_s = source_path
 
+        self.save_to_yaml_s(self.text_s)
+
         if os.path.isdir(self.text_t) is True and os.path.isdir(self.text_s) is True:
             self.button_sync.setDisabled(False)
             self.button_generate_mscript.setDisabled(False)
@@ -113,6 +172,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         global text_t
         text_t = self.text_t = target_path
 
+        self.save_to_yaml_t(self.text_t)
+
         if os.path.isdir(self.text_t) is True and os.path.isdir(self.text_s) is True:
             self.button_sync.setDisabled(False)
             self.button_generate_mscript.setDisabled(False)
@@ -122,7 +183,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         global text_s, text_t
         print("Source_path:", text_s)
         print("Target_path:", text_t)
-        sync(text_s, text_t, 'sync', create=True)
+        print(force_file_sync)
+        sync(text_s, text_t, 'sync', create=True, force=force_file_sync)
 
     def _enable_auto_flag(self):
 
@@ -367,11 +429,6 @@ class AnotherWindow(QtWidgets.QDialog):
                 text_t =""
                 return
             
-            
-
-        
-
-            
         else:
             return
         
@@ -401,8 +458,8 @@ class Watcher(Ui_MainWindow):
             print("NOT CONNECTED", text_s, text_t, valid_path_source_sync, valid_path_target_sync)
             time.sleep(2)
         print("drive connected")
-        
-        sync(self.valid_path_source, self.valid_path_target, 'sync', create=True)
+        print(force_file_sync)
+        sync(self.valid_path_source, self.valid_path_target, 'sync', force=force_file_sync, create=True)
 
         self.observer.schedule(
             self.handler, self.valid_path_source, recursive=True)
@@ -472,8 +529,8 @@ class MyHandler(FileSystemEventHandler):
 
     def on_any_event(self, event):
         global text_s, text_t, valid_path_source_sync, valid_path_target_sync
-        print(valid_path_source_sync, valid_path_target_sync)
-        sync(valid_path_source_sync, valid_path_target_sync, 'sync', create=True, purge=True)
+        print(valid_path_source_sync, valid_path_target_sync, force_file_sync)
+        sync(valid_path_source_sync, valid_path_target_sync, 'sync', force=force_file_sync, create=True)
 
 
 class myThread (threading.Thread):
