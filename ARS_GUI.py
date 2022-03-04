@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QApplication, QAction, QMessag
 from pathlib import Path
 
 import threading
-
+import pythoncom
 
 class Ui_MainWindow(QtWidgets.QMainWindow):
 
@@ -92,6 +92,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
 
     def first_load(self):
+        
         if os.path.isfile("data.yml"):
             with open('data.yml') as outfile:
                 global text_s, text_t
@@ -184,7 +185,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         print("Source_path:", text_s)
         print("Target_path:", text_t)
         print(force_file_sync)
-        sync(text_s, text_t, 'sync', create=True, force=force_file_sync)
+        sync(text_s, text_t, 'sync', create=True,
+             force=force_file_sync, purge=True)
 
     def _enable_auto_flag(self):
 
@@ -438,7 +440,7 @@ class Watcher(Ui_MainWindow):
     def __init__(self, directory=".", handler=FileSystemEventHandler()):
         self.observer = Observer()
         self.handler = handler
-        
+        pythoncom.CoInitialize()
         self.directory = text_s
         self.valid_path_source = ""
         self.valid_path_target = ""
@@ -459,7 +461,8 @@ class Watcher(Ui_MainWindow):
             time.sleep(2)
         print("drive connected")
         print(force_file_sync)
-        sync(self.valid_path_source, self.valid_path_target, 'sync', force=force_file_sync, create=True)
+        sync(self.valid_path_source, self.valid_path_target,
+             'sync', force=force_file_sync, create=True, purge=True)
 
         self.observer.schedule(
             self.handler, self.valid_path_source, recursive=True)
@@ -495,6 +498,7 @@ class Watcher(Ui_MainWindow):
             found = self.m.group(1)
             print(found)
             return found
+        return ""
         
 
     def find_drive_source(self): ### WORK IN PROGRESS
@@ -530,7 +534,7 @@ class MyHandler(FileSystemEventHandler):
     def on_any_event(self, event):
         global text_s, text_t, valid_path_source_sync, valid_path_target_sync
         print(valid_path_source_sync, valid_path_target_sync, force_file_sync)
-        sync(valid_path_source_sync, valid_path_target_sync, 'sync', force=force_file_sync, create=True)
+        sync(valid_path_source_sync, valid_path_target_sync, 'sync', force=force_file_sync, create=True, purge=True)
 
 
 class myThread (threading.Thread):
