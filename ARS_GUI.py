@@ -120,19 +120,27 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 }
                 yaml.dump(data, outfile)
 
-    def save_to_yaml_s(self, src):
-        with open('data.yml') as outfile:
-           doc = yaml.safe_load(outfile)
-           doc['src'] = src
-        with open('data.yml','w') as outfile:
-            yaml.dump(doc, outfile)
-           
-    def save_to_yaml_t(self, trg):
-        with open('data.yml') as outfile:
-           doc = yaml.safe_load(outfile)
-           doc['trg'] = trg
-        with open('data.yml','w') as outfile:
-            yaml.dump(doc, outfile)
+    def save_to_yaml(self, **kwargs):
+        source_path = ""
+        target_path = ""
+        source_path = kwargs.get("src", source_path)
+        source_path = kwargs.get("trg", target_path)
+
+        for i, k in kwargs.items():   
+            if i == "src":
+                with open('data.yml') as outfile:
+                   doc = yaml.safe_load(outfile)
+                   doc['src'] = k
+                with open('data.yml','w') as outfile:
+                    yaml.dump(doc, outfile)
+            elif i == "trg":
+                with open('data.yml') as outfile:
+                   doc = yaml.safe_load(outfile)
+                   doc['trg'] = k
+                with open('data.yml','w') as outfile:
+                    yaml.dump(doc, outfile)
+            
+
         
     def sync_parameters(self):
         if self.checkBox_force.isChecked():
@@ -154,12 +162,14 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
     def _open_file_dialog_source(self):  # function to open the dialog window
         source_path = str(QtWidgets.QFileDialog.getExistingDirectory())
+        if source_path == "":
+            return
         self.lineEdit_source.setText('{}'.format(source_path))
         print(source_path)
         global text_s
         text_s = self.text_s = source_path
 
-        self.save_to_yaml_s(self.text_s)
+        self.save_to_yaml(src=text_s)
 
         if os.path.isdir(self.text_t) is True and os.path.isdir(self.text_s) is True:
             self.button_sync.setDisabled(False)
@@ -168,12 +178,14 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
     def _open_file_dialog_target(self):
         target_path = str(QtWidgets.QFileDialog.getExistingDirectory())
+        if target_path == "":
+            return
         self.lineEdit_target.setText('{}'.format(target_path))
         print(target_path)
         global text_t
         text_t = self.text_t = target_path
 
-        self.save_to_yaml_t(self.text_t)
+        self.save_to_yaml(trg=text_t)
 
         if os.path.isdir(self.text_t) is True and os.path.isdir(self.text_s) is True:
             self.button_sync.setDisabled(False)
@@ -304,11 +316,13 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 if toggle == "source":
                     #text_s = drive.Caption + self.remove_prefix(self.p, drive_brackets)
                     #print (text_s)
-                    self.text_s = self.test
+                    self.text_s = test = self.test
                     self.lineEdit_source.setText('{}'.format(self.test))
+                    self.save_to_yaml(src=test)
                 elif toggle == "target":
-                    text_t = self.text_t = self.test
+                    self.text_t = test = self.test
                     self.lineEdit_target.setText('{}'.format(self.test))
+                    self.save_to_yaml(trg=test)
                 else:
                     return
 
@@ -382,7 +396,8 @@ class AnotherWindow(QtWidgets.QDialog):
         current_drive_index = re.split('[:]', v)
         current_drive_index[0] += ":\\"
         current_drive_index[1] = "[" + current_drive_index[1] + "]"
-        self.lineEdit.setText('{}'.format(current_drive_index[1])) 
+        self.lineEdit.setText('{}'.format(current_drive_index[1]))
+         
         self.checkBox.setChecked(False)
         self.checkBox_2.setChecked(False)
         
@@ -404,7 +419,7 @@ class AnotherWindow(QtWidgets.QDialog):
         is_closed = False
         self.close()
         
-    
+
     def target_directory_select(self):
         if self.checkBox.isChecked():
             global text_s
