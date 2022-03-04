@@ -349,6 +349,9 @@ class AnotherWindow(QtWidgets.QDialog):
         self.checkBox.toggled.connect(self.checkbox_function)
         self.checkBox_2.toggled.connect(self.checkbox_function_2)
         self.checkBox_3.setChecked(True)
+        self.checkBox.stateChanged.connect(self.button_state)
+        self.checkBox_2.stateChanged.connect(self.button_state)
+
     def UiComponents(self):
         self.listWidget = self.findChild(QtWidgets.QListWidget, "listWidget")
         self.lineEdit = self.findChild(QtWidgets.QLineEdit, "lineEdit")
@@ -358,9 +361,22 @@ class AnotherWindow(QtWidgets.QDialog):
         self.checkBox_2 = self.findChild(QtWidgets.QCheckBox, "checkBox_2")
         self.checkBox_3 = self.findChild(QtWidgets.QCheckBox, "checkBox_3")
         
-        
+    def button_state(self):
+        if self.listWidget.currentRow() != -1:
+            if self.checkBox.isChecked() or self.checkBox_2.isChecked() :
+                self.pushButton_select.setDisabled(False)
+                self.commandLinkButton_go.setDisabled(False)
+            elif self.checkBox.isChecked() == False or self.checkBox_2.isChecked() == False:
+                
+                self.pushButton_select.setDisabled(True)
+                self.commandLinkButton_go.setDisabled(True)
+        else:
+            self.pushButton_select.setDisabled(True)
+            self.commandLinkButton_go.setDisabled(True)
+
 
     def selectionChanged(self):
+        self.button_state()
         v = str(self.listWidget.currentItem().text())
         global current_drive_index# ['E:\\', '[USB_MIKE]']
         current_drive_index = re.split('[:]', v)
@@ -369,8 +385,8 @@ class AnotherWindow(QtWidgets.QDialog):
         self.lineEdit.setText('{}'.format(current_drive_index[1])) 
         self.checkBox.setChecked(False)
         self.checkBox_2.setChecked(False)
-        self.pushButton_select.setDisabled(False)
         
+
     def checkbox_function(self):
         if self.checkBox.isChecked() :
             self.checkBox_2.setChecked(False)
@@ -411,7 +427,8 @@ class AnotherWindow(QtWidgets.QDialog):
                 text_s = ""
                 return
             
-          
+        else:
+            self.pushButton_select.setDisabled(True)
         if self.checkBox_2.isChecked():
             global text_t
             
@@ -432,6 +449,8 @@ class AnotherWindow(QtWidgets.QDialog):
                 return
             
         else:
+            
+            self.pushButton_select.setDisabled(True)
             return
         
         
@@ -439,12 +458,11 @@ class Watcher(Ui_MainWindow):
 
     def __init__(self, directory=".", handler=FileSystemEventHandler()):
         self.observer = Observer()
-        self.handler = handler
         pythoncom.CoInitialize()
+        self.handler = handler
         self.directory = text_s
         self.valid_path_source = ""
         self.valid_path_target = ""
-        
 
 
     def run(self):
