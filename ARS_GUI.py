@@ -15,7 +15,9 @@ from dirsync import sync
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QApplication, QAction, QMessageBox
 from pathlib import Path
-
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QGridLayout, QWidget, QCheckBox, QSystemTrayIcon, \
+QSpacerItem, QSizePolicy, QMenu, QAction, QStyle, qApp
+from PyQt5.QtGui import QIcon
 import threading
 import pythoncom
 
@@ -26,7 +28,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         super(Ui_MainWindow, self).__init__()
         uic.loadUi('ARS.ui', self)  # Load the .ui file
         global stop_threads, text_t, text_s, toggle, is_closed, force_file_sync
-        self.auto_flag = "0"
+        self.auto_flag = False
         self.text_g = ""
         self.text_s = text_s = ""
         self.text_t = text_t = ""
@@ -56,7 +58,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.button_generate_mscript = self.findChild(
             QtWidgets.QPushButton, "toolButtonOpenDialog_4")
         self.button_generate_mscript.clicked.connect(self._enable_auto_flag)
-        self.button_generate_mscript.clicked.connect(self._generate_auto_py)
+        
         self.button_generate_mscript.setDisabled(True)
 
         self.button_launch_watchdog = self.findChild(
@@ -87,7 +89,53 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
         self.textEdit_m.setText('{}'.format(
             "1) Select your source and target directory for data synchronisation.\n2) If you wish, you have an option to sync to a removable media on connection - set this up by clicking on the 'select' button.\n3) Generate monitor script option is made to be launched at a specific time intervals.\n4) Watchdog is newer and therefore recommended to use."))
+        
+
+
+        self.trayicon = QSystemTrayIcon(self)
+        self.trayicon.setIcon(QIcon("ars_icon.ico"))
+        menu = QMenu()
+        checkAction = menu.addAction("Show Menu")
+        checkAction.triggered.connect(self.show_main_window)
+        
+        
+        watchdogAction = menu.addAction("Start/Stop Watchdog")
+            
+        
+        watchdogAction.triggered.connect(self._run_watchdog)
+        watchdogAction.triggered.connect(self.update_menu)
+        quitAction = menu.addAction("Quit")
+        quitAction.triggered.connect(qApp.quit)
+
+        self.trayicon.setContextMenu(menu)
+        self.trayicon.show()
+        
+        self.check_auto_flag()
         self.first_load()
+        
+        #self.show()
+
+    def update_menu(self):
+        123
+        
+        
+    def check_auto_flag(self):
+        _translate = QtCore.QCoreApplication.translate
+        with open('data.yml') as outfile:
+                doc = yaml.safe_load(outfile)
+                if doc['auto'] == True:
+                    self.hide()
+                    self.button_generate_mscript.setText(
+                    _translate("TestQFileDialog", "Auto = ON"))
+                    self._run_watchdog()
+                    self.auto_flag = True
+                else:
+                    self.button_generate_mscript.setText(
+                    _translate("TestQFileDialog", "Auto = OFF"))
+                    self.show()
+
+
+    def show_main_window(self):
         self.show()
 
 
@@ -115,7 +163,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             with open('data.yml', 'w') as outfile:
                 data = {
                     'src': '', 
-                    'trg': '', 
+                    'trg': '',
+                    'auto': False,
                     
                 }
                 yaml.dump(data, outfile)
@@ -203,39 +252,29 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     def _enable_auto_flag(self):
 
         _translate = QtCore.QCoreApplication.translate
-        check = self.auto_flag
-        if check == "1":
-            self.auto_flag = "0"
+        
+        if self.auto_flag:
+            self.auto_flag = False
+            self._generate_auto_py(self.auto_flag)
             self.button_generate_mscript.setText(
-                _translate("TestQFileDialog", "Manual Mode"))
+                _translate("TestQFileDialog", "Auto = OFF"))
             self.textEdit_m.setText('{}'.format(
-                "Manual Mode enabled. Run the generated file to change the set configuration through CMD."))
+                "Automation mode disabled. Application will now start normally. "))
         else:
-            self.auto_flag = "1"
+            self.auto_flag = True
+            self._generate_auto_py(self.auto_flag)
             self.button_generate_mscript.setText(
                 _translate("TestQFileDialog", "Auto = ON"))
             self.textEdit_m.setText('{}'.format(
-                "Automation mode enabled. You can find the generated script in PATH. Feel free to add it to your task scheduler or etc..."))
+                "Automation mode enabled. Application will start minimized and launch Watchdog automatically. Configuration file is data.yml"))
         print("Autoflag set to:", self.auto_flag)
 
-    def _generate_auto_py(self):
-        global text_s, text_t, py_data
-        filename_py = "scripts/exec.py"
-        file_name_conf = "scripts/config.json"
-        self.txt_g = Path("py_data").read_text()
-        os.makedirs(os.path.dirname(filename_py), exist_ok=True)
-        with open(filename_py, "w") as f:
-            f.write(self.txt_g)
-
-        data = {
-            r"source_path": text_s,
-            r"target_path": text_t,
-            r'Automation Flag': self.auto_flag,
-
-        }
-        json_string = json.dumps(data)
-        with open(file_name_conf, "w") as jsonfile:
-            json.dump(data, jsonfile)
+    def _generate_auto_py(self, auto_value):
+        with open('data.yml') as outfile:
+           doc = yaml.safe_load(outfile)
+           doc['auto'] = auto_value
+        with open('data.yml','w') as outfile:
+            yaml.dump(doc, outfile)
 
     def _text_Edited(self):
         global text_s, text_t
@@ -252,8 +291,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.button_launch_watchdog.setDisabled(False)
             print("ALL GOOD")
 
+
+
     def _run_watchdog(self):
         global stop_threads
+        
         _translate = QtCore.QCoreApplication.translate
         thread1 = myThread(1, "Thread-1", 1)
 
@@ -290,7 +332,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 self.selected_drive_index = re.split('[:]', self.v)
                 self.selected_drive_index[0] += ":" # Selected Drive
                 self.selected_drive = self.selected_drive_index[0]
-                print(self.selected_drive)
+                #print(self.selected_drive)
                 self.pre_populate_data()
             if win.checkBox_3.isChecked() == False:
                 self.button_launch_watchdog.setDisabled(False)
@@ -338,6 +380,17 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.button_generate_mscript.setDisabled(False)
             self.button_launch_watchdog.setDisabled(False)
             return True
+
+    def closeEvent(self, event):
+        
+            event.ignore()
+            self.hide()
+            self.trayicon.showMessage(
+                "ARS File Sync",
+                "Application was minimized to Tray",
+                QSystemTrayIcon.Information,
+                2000
+            )
 
 
 class AnotherWindow(QtWidgets.QDialog):
@@ -493,9 +546,10 @@ class Watcher(Ui_MainWindow):
             print("NOT CONNECTED", text_s, text_t, valid_path_source_sync, valid_path_target_sync)
             time.sleep(2)
         print("drive connected")
-        print(force_file_sync)
-        sync(self.valid_path_source, self.valid_path_target,
-             'sync', force=force_file_sync, create=True, purge=True)
+        if self.volume_letter_source != None and self.volume_letter_target != None:
+            sync(self.valid_path_source, self.valid_path_target,
+            'sync', force=force_file_sync, create=True, purge=True)
+        
 
         self.observer.schedule(
             self.handler, self.valid_path_source, recursive=True)
@@ -506,6 +560,13 @@ class Watcher(Ui_MainWindow):
                 print("\nWatcher Running in {}/\n".format(self.directory))
                 time.sleep(1)
                 global stop_threads
+                self.volume_letter_source = self.find_drive_source()
+                self.volume_letter_target = self.find_drive_target()
+                self.valid_path_source = valid_path_source_sync = self.get_full_path(
+                    self.volume_letter_source, text_s, "[" + str(self.volumeN_source) + "]")
+                self.valid_path_target = valid_path_target_sync = self.get_full_path(
+                    self.volume_letter_target, text_t, "[" + str(self.volumeN_target) + "]")
+                
                 if stop_threads == "1":
                     self.observer.stop()
                     self.observer.join()
@@ -541,7 +602,7 @@ class Watcher(Ui_MainWindow):
         
         for drive in c.Win32_LogicalDisk():
             if drive.VolumeName == self.volumeN_source:
-                print(drive.Caption)
+                #print(drive.Caption)
                 return drive.Caption
 
     def find_drive_target(self): ### WORK IN PROGRESS
@@ -551,7 +612,7 @@ class Watcher(Ui_MainWindow):
         
         for drive in c.Win32_LogicalDisk():
             if drive.VolumeName == self.volumeN_target:
-                print(drive.Caption)
+                #print(drive.Caption)
                 return drive.Caption
 
 
@@ -559,7 +620,7 @@ class Watcher(Ui_MainWindow):
         if os.path.isdir(path):
             return path
         self.path = str(drive) + path.replace(volumeN, "")
-        print(drive, path, volumeN)
+        #print(drive, path, volumeN)
         return self.path
 
 class MyHandler(FileSystemEventHandler):
@@ -581,8 +642,8 @@ class myThread (threading.Thread):
        print("Starting thread 1")
        while True:
            time.sleep(0.5)
-           print("Working")
-           print("Starting " + self.name)
+           #print("Working")
+           #print("Starting " + self.name)
            w = Watcher(".", MyHandler())
            w.run()
            print("Exiting " + self.name)
