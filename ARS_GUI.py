@@ -91,33 +91,65 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             "1) Select your source and target directory for data synchronisation.\n2) If you wish, you have an option to sync to a removable media on connection - set this up by clicking on the 'select' button.\n3) Generate monitor script option is made to be launched at a specific time intervals.\n4) Watchdog is newer and therefore recommended to use."))
         
 
+        self.disambiguateTimer = QtCore.QTimer(self)
+        self.disambiguateTimer.setSingleShot(True)
+        self.disambiguateTimer.timeout.connect(
+                self.disambiguateTimerTimeout)
 
-        self.trayicon = QSystemTrayIcon(self)
-        self.trayicon.setIcon(QIcon("ars_icon.ico"))
-        menu = QMenu()
-        checkAction = menu.addAction("Show Menu")
-        checkAction.triggered.connect(self.show_main_window)
-        
-        
-        watchdogAction = menu.addAction("Start/Stop Watchdog")
-            
-        
-        watchdogAction.triggered.connect(self._run_watchdog)
-        watchdogAction.triggered.connect(self.update_menu)
-        quitAction = menu.addAction("Quit")
-        quitAction.triggered.connect(qApp.quit)
-
-        self.trayicon.setContextMenu(menu)
-        self.trayicon.show()
-        
+        self.update_menu()
         self.check_auto_flag()
         self.first_load()
         
-        #self.show()
+        
+    def disambiguateTimerTimeout(self):
+        print ("Tray icon single clicked")
 
     def update_menu(self):
-        123
-        
+        self.trayicon = QSystemTrayIcon(self)
+        self.trayicon.setIcon(QIcon("ars_icon.ico"))
+        self.menu = QMenu()
+        checkAction = self.menu.addAction("Show Menu")
+        checkAction.triggered.connect(self.show_main_window)
+        self.trayicon.activated.connect(self.onTrayIconActivated)
+
+        self.watchdogAction = self.menu.addAction("Start Watchdog")
+        self.watchdogAction.triggered.connect(self._run_watchdog)
+        self.watchdogAction.triggered.connect(self.dynamic_menu)
+
+        quitAction = self.menu.addAction("Quit")
+        quitAction.triggered.connect(qApp.quit)
+
+        self.trayicon.setContextMenu(self.menu)
+        self.trayicon.setVisible(True)
+
+
+    def onTrayIconActivated(self, reason):
+        print ("onTrayIconActivated:", reason)
+        if reason == QSystemTrayIcon.Trigger:
+            self.disambiguateTimer.start(qApp.doubleClickInterval())
+        elif reason == QSystemTrayIcon.DoubleClick:
+            self.expand_menu()
+            self.disambiguateTimer.stop()
+            print ("Tray icon double clicked")
+
+    def expand_menu(self):
+        self.show()
+
+    def dynamic_menu(self):
+       
+        self.menu.clear()
+
+        checkAction = self.menu.addAction("Show Menu")
+        checkAction.triggered.connect(self.show_main_window)
+        if stop_threads == "0":
+            self.button_test_2 = self.menu.addAction("Stop Watchdog")
+        else:
+            self.button_test_2 = self.menu.addAction("Start Watchdog")
+        self.button_test_2.triggered.connect(self._run_watchdog)
+        self.button_test_2.triggered.connect(self.dynamic_menu)
+        quitAction = self.menu.addAction("Quit")
+        quitAction.triggered.connect(qApp.quit)
+
         
     def check_auto_flag(self):
         _translate = QtCore.QCoreApplication.translate
