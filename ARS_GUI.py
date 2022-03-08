@@ -29,18 +29,16 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         uic.loadUi('ARS.ui', self)  # Load the .ui file
         global stop_threads, text_t, text_s, toggle, is_closed, force_file_sync
         self.auto_flag = False
+        self.l = True
+        stop_threads = "1"
         self.text_g = ""
         self.text_s = text_s = ""
         self.text_t = text_t = ""
-        self.stop_threads_2 = "0"
-        self.l = True
         self.selected_drive = ""
         self.parameters = ""
-        stop_threads = "1"
         toggle = ""
         is_closed = True
         force_file_sync = False
-
 
         self.button_source = self.findChild(
             QtWidgets.QPushButton, "toolButtonOpenDialog")
@@ -66,7 +64,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.button_launch_watchdog.clicked.connect(self._run_watchdog)
         self.button_launch_watchdog.setDisabled(True)
 
-
         self.button_select_drive = self.findChild(
             QtWidgets.QPushButton, "pushButton_6")
         self.button_select_drive.clicked.connect(self.show_new_window)
@@ -90,7 +87,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.textEdit_m.setText('{}'.format(
             "1) Select your source and target directory for data synchronisation.\n2) If you wish, you have an option to sync to a removable media on connection - set this up by clicking on the 'select' button.\n3) Generate monitor script option is made to be launched at a specific time intervals.\n4) Watchdog is newer and therefore recommended to use."))
         
-
         self.disambiguateTimer = QtCore.QTimer(self)
         self.disambiguateTimer.setSingleShot(True)
         self.disambiguateTimer.timeout.connect(
@@ -109,16 +105,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.trayicon = QSystemTrayIcon(self)
         self.trayicon.setIcon(QIcon("ars_icon.ico"))
         self.menu = QMenu()
-        checkAction = self.menu.addAction("Show Menu")
-        checkAction.triggered.connect(self.show_main_window)
-        self.trayicon.activated.connect(self.onTrayIconActivated)
-
-        self.watchdogAction = self.menu.addAction("Start Watchdog")
-        self.watchdogAction.triggered.connect(self._run_watchdog)
-        self.watchdogAction.triggered.connect(self.dynamic_menu)
-
-        self.quitAction = self.menu.addAction("Quit")
-        self.quitAction.triggered.connect(self.quit_app_t)
+        self.dynamic_menu()
 
         self.trayicon.setContextMenu(self.menu)
         self.trayicon.setVisible(True)
@@ -158,7 +145,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.quitAction = self.menu.addAction("Quit")
         self.quitAction.triggered.connect(self.quit_app_t)
 
-        
     def check_auto_flag(self):
         _translate = QtCore.QCoreApplication.translate
         with open('data.yml') as outfile:
@@ -167,8 +153,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     self.hide()
                     self.button_generate_mscript.setText(
                     _translate("TestQFileDialog", "Auto = ON"))
+                    
                     self._run_watchdog()
-                    #self.dynamic_menu()
+                    self.dynamic_menu()
+                    
                     self.auto_flag = True
                 else:
                     self.button_generate_mscript.setText(
@@ -176,10 +164,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     
                     self.show()
 
-
     def show_main_window(self):
         self.show()
-
 
     def first_load(self):
         
@@ -231,8 +217,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 with open('data.yml','w') as outfile:
                     yaml.dump(doc, outfile)
             
-
-        
     def sync_parameters(self):
         if self.checkBox_force.isChecked():
             global force_file_sync
@@ -333,8 +317,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.button_launch_watchdog.setDisabled(False)
             print("ALL GOOD")
 
-
-
     def _run_watchdog(self):
         global stop_threads
         
@@ -355,6 +337,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 _translate("TestQFileDialog", "Watchdog disabled"))
             self.textEdit_m.setText('{}'.format(
                 "Watchdog has been disabled - click the button again to re-activate."))
+        self.dynamic_menu()
 
     def show_new_window(self, checked):
         global is_closed
@@ -409,9 +392,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     self.save_to_yaml(trg=test)
                 else:
                     return
-
-                    
-            
 
     def remove_prefix(self, text, prefix):
         return text[text.startswith(prefix) and len(prefix):]
@@ -483,7 +463,6 @@ class AnotherWindow(QtWidgets.QDialog):
             self.pushButton_select.setDisabled(True)
             self.commandLinkButton_go.setDisabled(True)
 
-
     def selectionChanged(self):
         self.button_state()
         v = str(self.listWidget.currentItem().text())
@@ -496,7 +475,6 @@ class AnotherWindow(QtWidgets.QDialog):
         self.checkBox.setChecked(False)
         self.checkBox_2.setChecked(False)
         
-
     def checkbox_function(self):
         if self.checkBox.isChecked() :
             self.checkBox_2.setChecked(False)
@@ -514,7 +492,6 @@ class AnotherWindow(QtWidgets.QDialog):
         is_closed = False
         self.close()
         
-
     def target_directory_select(self):
         if self.checkBox.isChecked():
             global text_s
@@ -574,7 +551,6 @@ class Watcher(Ui_MainWindow):
         self.valid_path_source = ""
         self.valid_path_target = ""
 
-
     def run(self):
         global text_s, text_t, valid_path_source_sync, valid_path_target_sync
         
@@ -592,7 +568,6 @@ class Watcher(Ui_MainWindow):
             sync(self.valid_path_source, self.valid_path_target,
             'sync', force=force_file_sync, create=True, purge=True)
         
-
         self.observer.schedule(
             self.handler, self.valid_path_source, recursive=True)
         self.observer.start()
@@ -636,7 +611,6 @@ class Watcher(Ui_MainWindow):
             return found
         return ""
         
-
     def find_drive_source(self): ### WORK IN PROGRESS
         c = wmi.WMI()
 
@@ -656,7 +630,6 @@ class Watcher(Ui_MainWindow):
             if drive.VolumeName == self.volumeN_target:
                 #print(drive.Caption)
                 return drive.Caption
-
 
     def get_full_path(self, drive, path, volumeN):
         if os.path.isdir(path):
@@ -692,7 +665,6 @@ class myThread (threading.Thread):
            
            if stop_threads:
                return
-
 
 if __name__ == "__main__":
 
