@@ -97,6 +97,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 self.disambiguateTimerTimeout)
 
         self.update_menu()
+        
         self.check_auto_flag()
         self.first_load()
         
@@ -116,12 +117,19 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.watchdogAction.triggered.connect(self._run_watchdog)
         self.watchdogAction.triggered.connect(self.dynamic_menu)
 
-        quitAction = self.menu.addAction("Quit")
-        quitAction.triggered.connect(qApp.quit)
+        self.quitAction = self.menu.addAction("Quit")
+        self.quitAction.triggered.connect(self.quit_app_t)
 
         self.trayicon.setContextMenu(self.menu)
         self.trayicon.setVisible(True)
 
+    def quit_app_t(self):
+        
+        self.menu.close()
+        self.trayicon.hide()
+        global stop_threads
+        stop_threads = "1"
+        sys.exit()
 
     def onTrayIconActivated(self, reason):
         print ("onTrayIconActivated:", reason)
@@ -146,9 +154,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         else:
             self.button_test_2 = self.menu.addAction("Start Watchdog")
         self.button_test_2.triggered.connect(self._run_watchdog)
-        self.button_test_2.triggered.connect(self.dynamic_menu)
-        quitAction = self.menu.addAction("Quit")
-        quitAction.triggered.connect(qApp.quit)
+        
+        self.quitAction = self.menu.addAction("Quit")
+        self.quitAction.triggered.connect(self.quit_app_t)
 
         
     def check_auto_flag(self):
@@ -160,10 +168,12 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     self.button_generate_mscript.setText(
                     _translate("TestQFileDialog", "Auto = ON"))
                     self._run_watchdog()
+                    #self.dynamic_menu()
                     self.auto_flag = True
                 else:
                     self.button_generate_mscript.setText(
                     _translate("TestQFileDialog", "Auto = OFF"))
+                    
                     self.show()
 
 
