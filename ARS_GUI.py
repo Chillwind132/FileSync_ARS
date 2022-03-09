@@ -2,21 +2,14 @@ import re
 import wmi
 import os.path
 import time
-import json
 import os
 import sys
 import yaml
-from datetime import datetime
-from tkinter import N
-from pickle import FALSE, TRUE
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from dirsync import sync
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QApplication, QAction, QMessageBox
-from pathlib import Path
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QGridLayout, QWidget, QCheckBox, QSystemTrayIcon, \
-QSpacerItem, QSizePolicy, QMenu, QAction, QStyle, qApp
+from PyQt5 import QtCore, QtWidgets, uic
+from PyQt5.QtWidgets import  QSystemTrayIcon, QMenu
 from PyQt5.QtGui import QIcon
 import threading
 import pythoncom
@@ -68,6 +61,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             QtWidgets.QPushButton, "pushButton_6")
         self.button_select_drive.clicked.connect(self.show_new_window)
 
+        self.pushButton_settings = self.findChild(
+        QtWidgets.QPushButton, "pushButton_settings")
+        self.pushButton_settings.clicked.connect(self.show_new_window_settings)
+        
         self.lineEdit_source = self.findChild(QtWidgets.QLineEdit, "lineEdit")
         self.lineEdit_source.textEdited.connect(self._text_Edited)
 
@@ -97,7 +94,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.check_auto_flag()
         self.first_load()
         
-        
+    def show_new_window_settings(self):
+        win_s = AnotherWindow_settings()
+        win_s.exec_()
+
     def disambiguateTimerTimeout(self):
         print ("Tray icon single clicked")
 
@@ -540,7 +540,13 @@ class AnotherWindow(QtWidgets.QDialog):
             self.pushButton_select.setDisabled(True)
             return
         
-        
+
+class AnotherWindow_settings(QtWidgets.QDialog):
+    def __init__(self, parent=Ui_MainWindow):
+        super(AnotherWindow_settings, self).__init__()
+        uic.loadUi('Dialog_s.ui', self)  # Load the .ui file
+
+
 class Watcher(Ui_MainWindow):
 
     def __init__(self, directory=".", handler=FileSystemEventHandler()):

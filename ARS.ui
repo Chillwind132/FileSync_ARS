@@ -122,9 +122,9 @@
       </widget>
      </item>
      <item row="8" column="0">
-      <widget class="QPushButton" name="pushButton">
+      <widget class="QPushButton" name="pushButton_settings">
        <property name="text">
-        <string>Sync Parameters</string>
+        <string>Settings</string>
        </property>
       </widget>
      </item>
