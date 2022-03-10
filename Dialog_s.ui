@@ -29,7 +29,7 @@
     <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
    </property>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -63,7 +63,7 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QCheckBox" name="checkBox_4">
+       <widget class="QCheckBox" name="checkBox_minimize">
         <property name="text">
          <string>Minimize to tray</string>
         </property>
