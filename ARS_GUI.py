@@ -32,6 +32,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.selected_drive = ""
         self.parameters = ""
         self.toggle = ""
+        self.ctime = True
         self.force_file_sync = False
         self.create_dir = False
         self.two_way = False
@@ -69,6 +70,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.pushButton_settings = self.findChild(
         QtWidgets.QPushButton, "pushButton_settings")
         self.pushButton_settings.clicked.connect(self.show_new_window_settings)
+
+        self.pushButton_close = self.findChild(
+            QtWidgets.QPushButton, "pushButton_close")
+        self.pushButton_close.clicked.connect(self.quit_app_t)
         
         self.lineEdit_source = self.findChild(QtWidgets.QLineEdit, "lineEdit")
         self.lineEdit_source.textEdited.connect(self._text_Edited)
@@ -202,6 +207,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     'src': '', 
                     'trg': '',
                     'auto': False,
+                    'ctime': True,
                     'force': False,
                     'create': False,
                     'two_way': False,
@@ -228,6 +234,12 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 with open('data.yml') as outfile:
                    doc = yaml.safe_load(outfile)
                    doc['trg'] = k
+                with open('data.yml','w') as outfile:
+                    yaml.dump(doc, outfile)
+            elif i == "ctime":
+                with open('data.yml') as outfile:
+                   doc = yaml.safe_load(outfile)
+                   doc['ctime'] = k
                 with open('data.yml','w') as outfile:
                     yaml.dump(doc, outfile)
             elif i == "force":
@@ -318,6 +330,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     def load_yaml_config(self):
         with open('data.yml') as outfile:
            doc = yaml.safe_load(outfile)
+           self.ctime = doc['ctime']
            self.force_file_sync = doc['force'] 
            self.create_dir = doc['create']
            self.two_way = doc['two_way']
@@ -328,7 +341,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         global text_s, text_t
         
         self.load_yaml_config()
-        sync(text_s, text_t, 'sync', verbose=True, force=self.force_file_sync, create=self.create_dir,
+        sync(text_s, text_t, 'sync', verbose=True, ctime=self.ctime, force=self.force_file_sync, create=self.create_dir,
              twoway=self.two_way, purge=self.purge)
         print(self.force_file_sync)
 
@@ -429,9 +442,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         c = wmi.WMI()
         for drive in c.Win32_LogicalDisk():
             if drive.Caption == self.selected_drive:
-                
-                
-
+        
                 drive_brackets = "[" + str(drive.VolumeName) + "]"
 
                 self.test = drive_brackets + self.remove_prefix(
@@ -600,8 +611,14 @@ class AnotherWindow_settings(QtWidgets.QDialog):
     def __init__(self, parent=Ui_MainWindow):
         super(AnotherWindow_settings, self).__init__()
         uic.loadUi('Dialog_s.ui', self)  # Load the .ui file
-        self.UiComponents()
-        self.run()
+        self.create_dir = True
+        self.two_way = True
+        self.purge = True
+        self.button_connect()
+        self.load_yaml_config()
+        self.dynamic_updates()
+        self.update_values()
+        
 
     def UiComponents(self):
         self.checkBox_create = self.findChild(
@@ -613,34 +630,38 @@ class AnotherWindow_settings(QtWidgets.QDialog):
         self.checkBox_minimize = self.findChild(
             QtWidgets.QCheckBox, "checkBox_minimize")
         
-    def run(self):
+    def button_connect(self):
         self.checkBox_create.toggled.connect(self.update_values)
         self.checkBox_twoway.toggled.connect(self.update_values)
         self.checkBox_purge.toggled.connect(self.update_values)
         self.checkBox_minimize.toggled.connect(self.update_values)
         
+    def dynamic_updates(self):
+
+        if self.create_dir:
+            self.checkBox_create.setChecked(True)
+        if self.two_way:
+            self.checkBox_twoway.setChecked(True)
+        if self.purge:
+            self.checkBox_purge.setChecked(True)
+        
     def update_values(self):
-        self.load_yaml_config()
-        if self.checkBox_create.isChecked():
-            self.create_dir = True
+        
+        if self.checkBox_create.isChecked() == True:
+            print("Checked")
+            self.save_to_yaml(create=True)
         else:
-            self.create_dir = False
-        self.save_to_yaml(create=self.create_dir)
-
-        if self.checkBox_twoway.isChecked():
-            self.two_way = True
+            self.save_to_yaml(create=False)
+            print("Unchecked")
+        if self.checkBox_twoway.isChecked() == True:
+            self.save_to_yaml(two_way=True)
         else:
-            self.two_way = False
-        self.save_to_yaml(two_way=self.two_way)
-
-        if self.checkBox_purge.isChecked():
-            self.purge = True
+            self.save_to_yaml(two_way=False)
+        if self.checkBox_purge.isChecked() == True:
+            self.save_to_yaml(purge=True)
         else:
-            self.purge = False
-        self.save_to_yaml(purge=self.purge)
-
-        #if self.minimize_tray.isChecked():       
-
+            self.save_to_yaml(purge=False)
+        
     def save_to_yaml(self, **kwargs):
         source_path = ""
         target_path = ""
@@ -658,6 +679,12 @@ class AnotherWindow_settings(QtWidgets.QDialog):
                 with open('data.yml') as outfile:
                    doc = yaml.safe_load(outfile)
                    doc['trg'] = k
+                with open('data.yml','w') as outfile:
+                    yaml.dump(doc, outfile)
+            elif i == "ctime":
+                with open('data.yml') as outfile:
+                   doc = yaml.safe_load(outfile)
+                   doc['ctime'] = k
                 with open('data.yml','w') as outfile:
                     yaml.dump(doc, outfile)
             elif i == "force":
@@ -711,6 +738,7 @@ class Watcher(Ui_MainWindow):
         self.valid_path_source = ""
         self.valid_path_target = ""
         self.force_file_sync = False
+        
 
     def run(self):
         global text_s, text_t, valid_path_source_sync, valid_path_target_sync
@@ -728,7 +756,7 @@ class Watcher(Ui_MainWindow):
         print("drive connected")
         if self.volume_letter_source != None and self.volume_letter_target != None:
             sync(self.valid_path_source, self.valid_path_target,
-                 'sync', verbose=True, force=self.force_file_sync, create=self.create_dir,
+                 'sync', ctime=self.ctime, verbose=True, force=self.force_file_sync, create=self.create_dir,
                  twoway=self.two_way, purge=self.purge)
         
         self.observer.schedule(
@@ -816,12 +844,13 @@ class MyHandler(FileSystemEventHandler):
     def on_any_event(self, event):
         global text_s, text_t, valid_path_source_sync, valid_path_target_sync
         self.load_yaml_config()
-        sync(valid_path_source_sync, valid_path_target_sync, 'sync', verbose=True, force=self.force_file_sync, create=self.create_dir,
+        sync(valid_path_source_sync, valid_path_target_sync, 'sync', verbose=True, ctime=self.ctime, force=self.force_file_sync, create=self.create_dir,
         twoway=self.two_way, purge=self.purge)
 
     def load_yaml_config(self):
         with open('data.yml') as outfile:
            doc = yaml.safe_load(outfile)
+           self.ctime = doc['ctime']
            self.force_file_sync = doc['force'] 
            self.create_dir = doc['create']
            self.two_way = doc['two_way']
