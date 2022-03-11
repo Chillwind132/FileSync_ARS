@@ -99,7 +99,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.disambiguateTimer.timeout.connect(
                 self.disambiguateTimerTimeout)
 
-        self.first_load()
+        self.first_load() ##
 
         self.update_menu()
         
@@ -637,7 +637,6 @@ class AnotherWindow_settings(QtWidgets.QDialog):
         self.checkBox_minimize.toggled.connect(self.update_values)
         
     def dynamic_updates(self):
-
         if self.create_dir:
             self.checkBox_create.setChecked(True)
         if self.two_way:
