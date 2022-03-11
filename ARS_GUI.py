@@ -614,6 +614,7 @@ class AnotherWindow_settings(QtWidgets.QDialog):
         self.create_dir = True
         self.two_way = True
         self.purge = True
+        self.minimize_tray = True
         self.button_connect()
         self.load_yaml_config()
         self.dynamic_updates()
@@ -643,23 +644,31 @@ class AnotherWindow_settings(QtWidgets.QDialog):
             self.checkBox_twoway.setChecked(True)
         if self.purge:
             self.checkBox_purge.setChecked(True)
+        if self.minimize_tray:
+            self.checkBox_minimize.setChecked(True)
         
     def update_values(self):
         
         if self.checkBox_create.isChecked() == True:
-            print("Checked")
             self.save_to_yaml(create=True)
         else:
             self.save_to_yaml(create=False)
-            print("Unchecked")
+
         if self.checkBox_twoway.isChecked() == True:
             self.save_to_yaml(two_way=True)
         else:
             self.save_to_yaml(two_way=False)
+
         if self.checkBox_purge.isChecked() == True:
             self.save_to_yaml(purge=True)
         else:
             self.save_to_yaml(purge=False)
+
+        if self.checkBox_minimize.isChecked() == True:
+            self.save_to_yaml(minimize_tray=True)
+        else:
+            self.save_to_yaml(minimize_tray=False)
+
         
     def save_to_yaml(self, **kwargs):
         source_path = ""
