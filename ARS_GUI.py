@@ -2,6 +2,7 @@ from fileinput import close
 import re
 import threading
 from tkinter import EXCEPTION
+from pathlib import Path
 import yaml
 import wmi
 import os.path
@@ -23,7 +24,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         
         super(Ui_MainWindow, self).__init__()
         uic.loadUi('ARS.ui', self)  # Load the .ui file
-        global stop_threads, text_t, text_s, is_closed
+        global stop_threads, text_t, text_s, is_closed, toggle
         stop_threads = "1"
         is_closed = True
         self.text_g = ""
@@ -41,6 +42,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.purge = False
         self.minimize_tray = False
 
+        self.setWindowTitle("File Sync Menu")
         self.button_source = self.findChild(
             QtWidgets.QPushButton, "toolButtonOpenDialog")
         self.button_source.clicked.connect(self._open_file_dialog_source)
@@ -174,7 +176,14 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.button_test_2.triggered.connect(self._run_watchdog)
         
         self.quitAction = self.menu.addAction("Quit")
-        self.quitAction.triggered.connect(self.quit_app_t)
+        self.quitAction.triggered.connect(self.hard_exit)
+
+    def hard_exit(self):
+        self.menu.close()
+        self.trayicon.hide()
+        global stop_threads
+        stop_threads = "1"
+        sys.exit()
 
     def check_auto_flag(self):
         _translate = QtCore.QCoreApplication.translate
@@ -471,13 +480,13 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 self.test = drive_brackets + self.remove_prefix(
                     self.p, drive_brackets)
                 
-                if self.toggle == "source":
+                if toggle == "source":
                     #text_s = drive.Caption + self.remove_prefix(self.p, drive_brackets)
                     #print (text_s)
                     self.text_s = test = self.test
                     self.lineEdit_source.setText('{}'.format(self.test))
                     self.save_to_yaml(src=test)
-                elif self.toggle == "target":
+                elif toggle == "target":
                     self.text_t = test = self.test
                     self.lineEdit_target.setText('{}'.format(self.test))
                     self.save_to_yaml(trg=test)
@@ -513,6 +522,7 @@ class AnotherWindow(QtWidgets.QDialog):
     def __init__(self, parent=Ui_MainWindow):
         super(AnotherWindow, self).__init__()
         uic.loadUi('Dialog.ui', self)  # Load the .ui file
+        self.setWindowTitle("Drive Selection Menu")
         
         self.drive_volume_to_monitor()
         
@@ -544,6 +554,68 @@ class AnotherWindow(QtWidgets.QDialog):
         self.checkBox = self.findChild(QtWidgets.QCheckBox, "checkBox")
         self.checkBox_2 = self.findChild(QtWidgets.QCheckBox, "checkBox_2")
         self.checkBox_3 = self.findChild(QtWidgets.QCheckBox, "checkBox_3")
+    
+    def save_to_yaml(self, **kwargs):
+
+        for i, k in kwargs.items():   
+            if i == "src":
+                with open('data.yml') as outfile:
+                   doc = yaml.safe_load(outfile)
+                   doc['src'] = k
+                with open('data.yml','w') as outfile:
+                    yaml.dump(doc, outfile)
+            elif i == "trg":
+                with open('data.yml') as outfile:
+                   doc = yaml.safe_load(outfile)
+                   doc['trg'] = k
+                with open('data.yml','w') as outfile:
+                    yaml.dump(doc, outfile)
+            elif i == "ctime":
+                with open('data.yml') as outfile:
+                   doc = yaml.safe_load(outfile)
+                   doc['ctime'] = k
+                with open('data.yml','w') as outfile:
+                    yaml.dump(doc, outfile)
+            elif i == "force":
+                with open('data.yml') as outfile:
+                   doc = yaml.safe_load(outfile)
+                   doc['force'] = k
+                with open('data.yml','w') as outfile:
+                    yaml.dump(doc, outfile)
+            elif i == "create":
+                with open('data.yml') as outfile:
+                   doc = yaml.safe_load(outfile)
+                   doc['create'] = k
+                with open('data.yml','w') as outfile:
+                    yaml.dump(doc, outfile)
+            elif i == "two_way":
+                with open('data.yml') as outfile:
+                   doc = yaml.safe_load(outfile)
+                   doc['two_way'] = k
+                with open('data.yml','w') as outfile:
+                    yaml.dump(doc, outfile)
+            elif i == "purge":
+                with open('data.yml') as outfile:
+                   doc = yaml.safe_load(outfile)
+                   doc['purge'] = k
+                with open('data.yml','w') as outfile:
+                    yaml.dump(doc, outfile)
+            elif i == "minimize_tray":
+                with open('data.yml') as outfile:
+                   doc = yaml.safe_load(outfile)
+                   doc['minimize_tray'] = k
+                with open('data.yml','w') as outfile:
+                    yaml.dump(doc, outfile)
+
+    def load_yaml_config(self):
+        with open('data.yml') as outfile:
+           doc = yaml.safe_load(outfile)
+           self.ctime = doc['ctime']
+           self.force_file_sync = doc['force'] 
+           self.create_dir = doc['create']
+           self.two_way = doc['two_way']
+           self.purge = doc['purge']
+           self.minimize_tray = doc['minimize_tray']
         
     def button_state(self):
         if self.listWidget.currentRow() != -1:
@@ -573,12 +645,14 @@ class AnotherWindow(QtWidgets.QDialog):
     def checkbox_function(self):
         if self.checkBox.isChecked() :
             self.checkBox_2.setChecked(False)
-            self.toggle = "source"
+            global toggle
+            toggle = "source"
         
     def checkbox_function_2(self):
         if self.checkBox_2.isChecked() :
             self.checkBox.setChecked(False)
-            self.toggle = "target"
+            global toggle
+            toggle = "target"
         
     def close_window(self):
         global is_closed
@@ -592,6 +666,8 @@ class AnotherWindow(QtWidgets.QDialog):
             target_path = text_s = str(QtWidgets.QFileDialog.getExistingDirectory(
                 None, "", current_drive_index[0]))
             
+            
+            
             if os.path.isdir(target_path) is True:
                 self.commandLinkButton_go.setDisabled(False) 
                 append_index = re.split('[:]', target_path)
@@ -602,6 +678,7 @@ class AnotherWindow(QtWidgets.QDialog):
                 
             try:
                 self.lineEdit.setText('{}'.format(view_index))
+                self.save_to_yaml(src=view_index)
                 
             except:
                 text_s = ""
@@ -614,6 +691,8 @@ class AnotherWindow(QtWidgets.QDialog):
             
             target_path = text_t = str(QtWidgets.QFileDialog.getExistingDirectory(
                 None, "", current_drive_index[0]))
+
+            
             
             if os.path.isdir(target_path) is True:
                 self.commandLinkButton_go.setDisabled(False) 
@@ -624,6 +703,7 @@ class AnotherWindow(QtWidgets.QDialog):
                 view_index = (''.join(str(x) for x in append_index))
             try:
                 self.lineEdit.setText('{}'.format(view_index))
+                self.save_to_yaml(trg=view_index)
             except:
                 text_t =""
                 return
@@ -638,6 +718,7 @@ class AnotherWindow_settings(QtWidgets.QDialog):
     def __init__(self, parent=Ui_MainWindow):
         super(AnotherWindow_settings, self).__init__()
         uic.loadUi('Dialog_s.ui', self)  # Load the .ui file
+        self.setWindowTitle("Settings")
         self.create_dir = True
         self.two_way = True
         self.purge = True
@@ -768,13 +849,21 @@ class Watcher(Ui_MainWindow):
         self.directory = text_s
         self.valid_path_source = ""
         self.valid_path_target = ""
-        
+        self.check_1 = ""
+        self.check_2 = ''
+        self.volume_letter_source = None
+        self.volume_letter_target = None
         
 
     def run(self):
         global text_s, text_t, valid_path_source_sync, valid_path_target_sync, stop_threads 
         self.load_yaml_config()
-        while self.is_drive_connected_source() != True and self.is_drive_connected_target() != True:  # Loop to detect target drive connection
+        # Loop to detect target drive connection
+
+        
+
+        while self.volume_letter_source == None or self.volume_letter_target == None:
+           
             self.load_yaml_config()
             self.volume_letter_source = self.find_drive_source()
             self.volume_letter_target = self.find_drive_target()
@@ -865,7 +954,7 @@ class Watcher(Ui_MainWindow):
                 return drive.Caption
 
     def get_full_path(self, drive, path, volumeN):
-        if os.path.isdir(path):
+        if (path.find(str(drive)) != -1):
             return path
         self.path = str(drive) + path.replace(volumeN, "")
         #print(drive, path, volumeN)
@@ -874,10 +963,47 @@ class Watcher(Ui_MainWindow):
 class MyHandler(FileSystemEventHandler):
 
     def on_any_event(self, event):
-        global text_s, text_t, valid_path_source_sync, valid_path_target_sync
+        pythoncom.CoInitialize()
+        global text_s, text_t
         self.load_yaml_config()
+
+        self.volume_letter_source = self.find_drive_source()
+        self.volume_letter_target = self.find_drive_target()
+        self.valid_path_source = valid_path_source_sync = self.get_full_path(
+            self.volume_letter_source, text_s, "[" + str(self.volumeN_source) + "]")
+        self.valid_path_target = valid_path_target_sync = self.get_full_path(
+            self.volume_letter_target, text_t, "[" + str(self.volumeN_target) + "]")
+
+        time.sleep(1)
         sync(valid_path_source_sync, valid_path_target_sync, 'sync', verbose=True, ctime=self.ctime, force=self.force_file_sync, create=self.create_dir,
         twoway=self.two_way, purge=self.purge)
+
+    def find_drive_source(self): ### WORK IN PROGRESS
+        
+        c = wmi.WMI()
+
+        self.volumeN_source = self.get_drive_letter(text_s)
+        
+        for drive in c.Win32_LogicalDisk():
+            if drive.VolumeName == self.volumeN_source:
+                #print(drive.Caption)
+                return drive.Caption
+    def find_drive_target(self): ### WORK IN PROGRESS
+        c = wmi.WMI()
+
+        self.volumeN_target = self.get_drive_letter(text_t)
+
+        for drive in c.Win32_LogicalDisk():
+            if drive.VolumeName == self.volumeN_target:
+                #print(drive.Caption)
+                return drive.Caption
+
+    def get_full_path(self, drive, path, volumeN):
+        if (path.find(drive) != -1):
+            return path
+        self.path = str(drive) + path.replace(volumeN, "")
+        #print(drive, path, volumeN)
+        return self.path
 
     def load_yaml_config(self):
         with open('data.yml') as outfile:
@@ -888,6 +1014,14 @@ class MyHandler(FileSystemEventHandler):
            self.two_way = doc['two_way']
            self.purge = doc['purge']
            self.minimize_tray = doc['minimize_tray']
+
+    def get_drive_letter(self, abb_path):
+        self.m = re.search(r"\[([A-Za-z0-9_]+)\]", abb_path)
+        if self.m:
+            found = self.m.group(1)
+            print(found)
+            return found
+        return ""
 
 class myThread (threading.Thread):
    def __init__(self, threadID, name, counter):
