@@ -1,5 +1,6 @@
 import re
 import threading
+from tkinter import EXCEPTION
 import yaml
 import wmi
 import os.path
@@ -11,7 +12,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from dirsync import sync
 from PyQt5 import QtCore, QtWidgets, uic
-from PyQt5.QtWidgets import  QSystemTrayIcon, QMenu
+from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, qApp
 from PyQt5.QtGui import QIcon
 
 
@@ -24,14 +25,14 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         global stop_threads, text_t, text_s, is_closed
         stop_threads = "1"
         is_closed = True
-        self.auto_flag = False
-        self.l = True
         self.text_g = ""
         self.text_s = text_s = ""
         self.text_t = text_t = ""
         self.selected_drive = ""
         self.parameters = ""
         self.toggle = ""
+        self.auto_flag = False
+        self.l = True
         self.ctime = True
         self.force_file_sync = False
         self.create_dir = False
@@ -73,7 +74,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
         self.pushButton_close = self.findChild(
             QtWidgets.QPushButton, "pushButton_close")
-        self.pushButton_close.clicked.connect(self.quit_app_t)
+        self.pushButton_close.clicked.connect(self.closeEvent)
         
         self.lineEdit_source = self.findChild(QtWidgets.QLineEdit, "lineEdit")
         self.lineEdit_source.textEdited.connect(self._text_Edited)
@@ -113,13 +114,17 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         print ("Tray icon single clicked")
 
     def update_menu(self):
+        
+        
         self.trayicon = QSystemTrayIcon(self)
+        
         self.trayicon.setIcon(QIcon("ars_icon.ico"))
         self.menu = QMenu()
         self.dynamic_menu()
 
         self.trayicon.setContextMenu(self.menu)
         self.trayicon.setVisible(True)
+        self.trayicon.activated.connect(self.onTrayIconActivated)
 
     def quit_app_t(self):
         
@@ -190,6 +195,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 self.lineEdit_target.setText('{}'.format(doc['trg']))
                 if doc['force']:
                     self.checkBox_force.setChecked(True)
+                
+
                 if os.path.isdir(text_t) is False or os.path.isdir(text_s) is False:
                     self.button_sync.setDisabled(True)
                     self.button_generate_mscript.setDisabled(True)
@@ -212,7 +219,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     'create': False,
                     'two_way': False,
                     'purge': False,
-                    'minimize_tray': False,
+                    'minimize_tray': True,
                     
                 }
                 yaml.dump(data, outfile)
@@ -394,6 +401,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         thread1 = myThread(1, "Thread-1", 1)
 
         if stop_threads == "1":
+            try:
+                self._sync_directory()
+            except Exception:
+                self.textEdit_m.setText('{}'.format("Sync argument exception! Watchdog disabled."))
+                return
             thread1.start()
             stop_threads = "0"
             self.button_launch_watchdog.setText(
@@ -472,8 +484,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             return True
 
     def closeEvent(self, event):
-        
-            event.ignore()
+        self.load_yaml_config()
+        if self.minimize_tray == True:
+            
             self.hide()
             self.trayicon.showMessage(
                 "ARS File Sync",
@@ -481,6 +494,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 QSystemTrayIcon.Information,
                 2000
             )
+        else:
+            self.close()
 
 
 class AnotherWindow(QtWidgets.QDialog):
@@ -505,10 +520,11 @@ class AnotherWindow(QtWidgets.QDialog):
     
         self.checkBox.toggled.connect(self.checkbox_function)
         self.checkBox_2.toggled.connect(self.checkbox_function_2)
-        self.checkBox_3.setChecked(True)
+        
         self.checkBox.stateChanged.connect(self.button_state)
         self.checkBox_2.stateChanged.connect(self.button_state)
-
+        self.checkBox_3.setChecked(True)
+        self.checkBox_3.setEnabled(False)
     def UiComponents(self):
         self.listWidget = self.findChild(QtWidgets.QListWidget, "listWidget")
         self.lineEdit = self.findChild(QtWidgets.QLineEdit, "lineEdit")
@@ -745,12 +761,12 @@ class Watcher(Ui_MainWindow):
         self.directory = text_s
         self.valid_path_source = ""
         self.valid_path_target = ""
-        self.force_file_sync = False
+        
         
 
     def run(self):
-        global text_s, text_t, valid_path_source_sync, valid_path_target_sync
-        
+        global text_s, text_t, valid_path_source_sync, valid_path_target_sync, stop_threads 
+        self.load_yaml_config()
         while self.is_drive_connected_source() != True and self.is_drive_connected_target() != True:  # Loop to detect target drive connection
             self.load_yaml_config()
             self.volume_letter_source = self.find_drive_source()
@@ -763,19 +779,19 @@ class Watcher(Ui_MainWindow):
             time.sleep(2)
         print("drive connected")
         if self.volume_letter_source != None and self.volume_letter_target != None:
-            sync(self.valid_path_source, self.valid_path_target,
+        
+                sync(self.valid_path_source, self.valid_path_target,
                  'sync', ctime=self.ctime, verbose=True, force=self.force_file_sync, create=self.create_dir,
                  twoway=self.two_way, purge=self.purge)
-        
-        self.observer.schedule(
-            self.handler, self.valid_path_source, recursive=True)
-        self.observer.start()
 
+                self.observer.schedule(
+                    self.handler, self.valid_path_source, recursive=True)
+                self.observer.start()
         try:
             while True:
                 print("\nWatcher Running in {}/\n".format(self.directory))
                 time.sleep(1)
-                global stop_threads
+                
                 self.volume_letter_source = self.find_drive_source()
                 self.volume_letter_target = self.find_drive_target()
                 self.valid_path_source = valid_path_source_sync = self.get_full_path(
@@ -800,6 +816,7 @@ class Watcher(Ui_MainWindow):
            self.two_way = doc['two_way']
            self.purge = doc['purge']
            self.minimize_tray = doc['minimize_tray']
+           self.ctime = doc['ctime']
         
 
     def is_drive_connected_source(self):
