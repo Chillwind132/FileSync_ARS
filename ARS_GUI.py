@@ -1,3 +1,4 @@
+from fileinput import close
 import re
 import threading
 from tkinter import EXCEPTION
@@ -74,7 +75,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
         self.pushButton_close = self.findChild(
             QtWidgets.QPushButton, "pushButton_close")
-        self.pushButton_close.clicked.connect(self.closeEvent)
+        self.pushButton_close.clicked.connect(self.quit_app_t)
         
         self.lineEdit_source = self.findChild(QtWidgets.QLineEdit, "lineEdit")
         self.lineEdit_source.textEdited.connect(self._text_Edited)
@@ -128,11 +129,25 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
     def quit_app_t(self):
         
-        self.menu.close()
-        self.trayicon.hide()
-        global stop_threads
-        stop_threads = "1"
-        sys.exit()
+        self.load_yaml_config()
+        if self.minimize_tray == True:
+            
+            self.hide()
+            self.trayicon.showMessage(
+                "ARS File Sync",
+                "Application was minimized to Tray",
+                QSystemTrayIcon.Information,
+                2000
+            )
+        else:
+            self.menu.close()
+            self.trayicon.hide()
+            global stop_threads
+            stop_threads = "1"
+            sys.exit()
+
+
+        
 
     def onTrayIconActivated(self, reason):
         print ("onTrayIconActivated:", reason)
@@ -225,10 +240,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 yaml.dump(data, outfile)
 
     def save_to_yaml(self, **kwargs):
-        source_path = ""
-        target_path = ""
-        source_path = kwargs.get("src", source_path)
-        source_path = kwargs.get("trg", target_path)
 
         for i, k in kwargs.items():   
             if i == "src":
@@ -404,7 +415,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             try:
                 self._sync_directory()
             except Exception:
-                self.textEdit_m.setText('{}'.format("Sync argument exception! Watchdog disabled."))
+                self.textEdit_m.setText('{}'.format("Sync argument exception! Watchdog disabled. 'Create files' setting not enabled? "))
                 return
             thread1.start()
             stop_threads = "0"
@@ -486,7 +497,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         self.load_yaml_config()
         if self.minimize_tray == True:
-            
+            event.ignore()
             self.hide()
             self.trayicon.showMessage(
                 "ARS File Sync",
@@ -687,11 +698,7 @@ class AnotherWindow_settings(QtWidgets.QDialog):
 
         
     def save_to_yaml(self, **kwargs):
-        source_path = ""
-        target_path = ""
-        source_path = kwargs.get("src", source_path)
-        source_path = kwargs.get("trg", target_path)
-
+    
         for i, k in kwargs.items():   
             if i == "src":
                 with open('data.yml') as outfile:
