@@ -1,8 +1,5 @@
-from fileinput import close
 import re
 import threading
-from tkinter import EXCEPTION
-from pathlib import Path
 import yaml
 import wmi
 import os.path
@@ -10,10 +7,13 @@ import time
 import os
 import sys
 import pythoncom
+import logging
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, LoggingEventHandler
-import logging
+from tkinter import EXCEPTION
+from pathlib import Path
 from dirsync import sync
+from fileinput import close
 from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, qApp
 from PyQt5.QtGui import QIcon
@@ -162,7 +162,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
         checkAction = self.menu.addAction("Show Menu")
         checkAction.triggered.connect(self.show_main_window)
-        if stop_threads == False:
+        if stop_threads is False:
             self.button_test_2 = self.menu.addAction("Stop Watchdog")
         else:
             self.button_test_2 = self.menu.addAction("Start Watchdog")
@@ -485,7 +485,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             win.exec_()
             self.index = win.listWidget.currentRow()
             
-            if self.index != -1 and is_closed == False:
+            if self.index != -1 and is_closed is False:
                 self.v = str(win.listWidget.currentItem().text())
                 self.p = win.lineEdit.text()
                 self.selected_drive_index = re.split('[:]', self.v)
@@ -493,7 +493,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 self.selected_drive = self.selected_drive_index[0]
                 #print(self.selected_drive)
                 self.pre_populate_data()
-            if win.checkBox_3.isChecked() == False:
+            if win.checkBox_3.isChecked() is False:
                 self.button_launch_watchdog.setDisabled(False)
         else:
             self.l.close()  # Close window.
@@ -644,7 +644,7 @@ class AnotherWindow(QtWidgets.QDialog):
             if self.checkBox.isChecked() or self.checkBox_2.isChecked() :
                 self.pushButton_select.setDisabled(False)
                 self.commandLinkButton_go.setDisabled(False)
-            elif self.checkBox.isChecked() == False or self.checkBox_2.isChecked() == False:
+            elif self.checkBox.isChecked() is False or self.checkBox_2.isChecked() is False:
                 self.pushButton_select.setDisabled(True)
                 self.commandLinkButton_go.setDisabled(True)
         else:
@@ -859,7 +859,7 @@ class Watcher(Ui_MainWindow):
     def run(self):
         global text_s, text_t, stop_threads 
         self.load_yaml_config()
-        while self.volume_letter_source == None or self.volume_letter_target == None: # Loop to detect target drive connection
+        while self.volume_letter_source is None or self.volume_letter_target is None: # Loop to detect target drive connection
            
             self.load_yaml_config()
             self.volume_letter_source = self.find_drive_source()
@@ -869,7 +869,7 @@ class Watcher(Ui_MainWindow):
             
             time.sleep(2)
         print("drive connected")
-        if self.volume_letter_source != None and self.volume_letter_target != None:
+        if self.volume_letter_source is not None and self.volume_letter_target is not None:
         
                 sync(self.valid_path_source, self.valid_path_target,
                  'sync', ctime=self.ctime, verbose=True, force=self.force_file_sync, create=self.create_dir,
@@ -888,17 +888,17 @@ class Watcher(Ui_MainWindow):
                     self.volume_letter_source, text_s, "[" + str(self.volumeN_source) + "]")
                 self.valid_path_target = valid_path_target_sync = self.get_full_path(
                     self.volume_letter_target, text_t, "[" + str(self.volumeN_target) + "]")
-                if self.volume_letter_source == None or self.volume_letter_target == None: ## Check this logic again
+                if self.volume_letter_source is None or self.volume_letter_target is None: ## Check this logic again
                     
                     self.observer.unschedule_all()
                     self.unscheduled = True
 
-                if self.volume_letter_source != None and self.unscheduled == True:
+                if self.volume_letter_source is not None and self.unscheduled is True:
                     self.observer.schedule(
                         self.handler, self.valid_path_source, recursive=True)
                     self.unscheduled = False
                     print('Drive DISCONNECTED')
-                if stop_threads == True:
+                if stop_threads is True:
                     self.observer.stop()
                     self.observer.join()
                     return
