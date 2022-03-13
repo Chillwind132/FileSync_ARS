@@ -1,0 +1,13 @@
+autopep8
+dirsync
+jsonpickle
+pycodestyle
+PyQt5
+PyQt5-Qt5
+PyQt5-sip
+pywin32
+PyYAML
+six
+toml
+watchdog
+WMI
