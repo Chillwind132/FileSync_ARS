@@ -14,7 +14,7 @@ from tkinter import EXCEPTION
 from pathlib import Path
 from dirsync import sync
 from fileinput import close
-from PyQt5 import QtCore, QtWidgets, uic
+from PyQt5 import QtCore, QtWidgets, uic, QtGui
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, qApp
 from PyQt5.QtGui import QIcon
 
@@ -43,6 +43,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.minimize_tray = False
 
         self.setWindowTitle("File Sync Menu")
+        self.setWindowIcon(QtGui.QIcon("ars_icon"))
         self.button_source = self.findChild(
             QtWidgets.QPushButton, "toolButtonOpenDialog")
         self.button_source.clicked.connect(self._open_file_dialog_source)
@@ -96,7 +97,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.checkBox_force.stateChanged.connect(self.sync_parameters)
 
         self.textEdit_m.setText('{}'.format(
-            "Select your source and target directory for data synchronisation.\n---\nIf you wish, you have an option to sync to a removable media - enable this option by clicking on the 'Drive' button.\n---\nWatchdog will monitor and sync any changes from the source folder. \n---\n'Auto' mode will start the application minimized and run watchdog automatically."))
+            "Select your source and target directory for data synchronisation.\n---\nIf you wish, you have an option to sync to a removable media - enable this option by clicking on the 'Drive' button.\n---\nWatchdog will monitor and sync any changes from the source directory. \n---\n'Auto' mode will start the application minimized and run watchdog automatically."))
         
         self.disambiguateTimer = QtCore.QTimer(self)
         self.disambiguateTimer.setSingleShot(True)
