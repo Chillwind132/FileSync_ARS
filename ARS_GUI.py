@@ -104,7 +104,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.disambiguateTimer.timeout.connect(
                 self.disambiguateTimerTimeout)
 
-        self.first_load() ##
+        self.first_load() 
 
         self.update_menu()
         
@@ -496,10 +496,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 self.pre_populate_data()
             if win.checkBox_3.isChecked() is False:
                 self.button_launch_watchdog.setDisabled(False)
-        else:
-            self.l.close()  # Close window.
-            self.l = True
-
+        
     def pre_populate_data(self):
         c = wmi.WMI()
         for drive in c.Win32_LogicalDisk():
@@ -557,8 +554,8 @@ class AnotherWindow(QtWidgets.QDialog):
             self.listWidget.addItem(drive_letter)
 
         self.listWidget.itemSelectionChanged.connect(self.selectionChanged)
-        self.pushButton_select.setDisabled(True) # Temp
-        self.commandLinkButton_go.setDisabled(True)  # Temp
+        self.pushButton_select.setDisabled(True) 
+        self.commandLinkButton_go.setDisabled(True)  
         self.pushButton_select.clicked.connect(self.target_directory_select)
         self.commandLinkButton_go.clicked.connect(self.close_window)
     
@@ -569,6 +566,7 @@ class AnotherWindow(QtWidgets.QDialog):
         self.checkBox_2.stateChanged.connect(self.button_state)
         self.checkBox_3.setChecked(True)
         self.checkBox_3.setEnabled(False)
+
     def UiComponents(self):
         self.listWidget = self.findChild(QtWidgets.QListWidget, "listWidget")
         self.lineEdit = self.findChild(QtWidgets.QLineEdit, "lineEdit")
@@ -579,7 +577,6 @@ class AnotherWindow(QtWidgets.QDialog):
         self.checkBox_3 = self.findChild(QtWidgets.QCheckBox, "checkBox_3")
     
     def save_to_yaml(self, **kwargs):
-
         for i, k in kwargs.items():   
             if i == "src":
                 with open('data.yml') as outfile:
@@ -679,6 +676,7 @@ class AnotherWindow(QtWidgets.QDialog):
         global is_closed
         is_closed = False
         self.close()
+
     def target_directory_select(self):
         if self.checkBox.isChecked():
             global text_s
@@ -696,7 +694,6 @@ class AnotherWindow(QtWidgets.QDialog):
             except Exception:
                 text_s = ""
                 return
-            
         else:
             self.pushButton_select.setDisabled(True)
         if self.checkBox_2.isChecked():
@@ -779,7 +776,6 @@ class AnotherWindow_settings(QtWidgets.QDialog):
             self.save_to_yaml(minimize_tray=False)
 
     def save_to_yaml(self, **kwargs):
-    
         for i, k in kwargs.items():   
             if i == "src":
                 with open('data.yml') as outfile:
@@ -982,7 +978,7 @@ class MyHandler(FileSystemEventHandler):
         sync(valid_path_source_sync, valid_path_target_sync, 'sync', verbose=True, ctime=self.ctime, force=self.force_file_sync, create=self.create_dir,
         twoway=self.two_way, purge=self.purge)
 
-    def find_drive_source(self): ### WORK IN PROGRESS
+    def find_drive_source(self): 
         pythoncom.CoInitialize()
         c = wmi.WMI()
 
@@ -992,7 +988,7 @@ class MyHandler(FileSystemEventHandler):
             if drive.VolumeName == self.volumeN_source:
                 #print(drive.Caption)
                 return drive.Caption
-    def find_drive_target(self): ### WORK IN PROGRESS
+    def find_drive_target(self): 
         c = wmi.WMI()
 
         self.volumeN_target = self.get_drive_letter(text_t)
@@ -1038,8 +1034,6 @@ class myThread (threading.Thread):
        print("Starting thread 1")
        while True:
            time.sleep(0.5)
-           #print("Working")
-           #print("Starting " + self.name)
            w = Watcher(".", MyHandler())
            w.run()
            print("Exiting " + self.name)
