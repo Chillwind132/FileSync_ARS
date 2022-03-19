@@ -96,7 +96,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.checkBox_force.stateChanged.connect(self.sync_parameters)
 
         self.textEdit_m.setText('{}'.format(
-            "Select your source and target directory for data synchronisation.\n---\nIf you wish, you have an option to sync to a removable media - enable this option by clicking on the 'Drive' button.\n---\nWatchdog will monitor and sync any changes from the source folder \n---\n'Auto' mode will start the application minimized and run watchdog automatically"))
+            "Select your source and target directory for data synchronisation.\n---\nIf you wish, you have an option to sync to a removable media - enable this option by clicking on the 'Drive' button.\n---\nWatchdog will monitor and sync any changes from the source folder. \n---\n'Auto' mode will start the application minimized and run watchdog automatically."))
         
         self.disambiguateTimer = QtCore.QTimer(self)
         self.disambiguateTimer.setSingleShot(True)
@@ -465,14 +465,14 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.button_launch_watchdog.setText(
                 _translate("TestQFileDialog", "Watchdog running..."))
             self.textEdit_m.setText('{}'.format(
-                "Watchdog is currently monitoring the target directory for changes and syncing any changes automatically."))
+                "Watchdog is currently monitoring the source folder for any changes and syncing new data to the target directory automatically."))
         else:
             stop_threads = True
 
             self.button_launch_watchdog.setText(
                 _translate("TestQFileDialog", "Watchdog disabled"))
             self.textEdit_m.setText('{}'.format(
-                "Watchdog has been disabled - click the 'Auto' button again to re-activate."))
+                "Watchdog has been disabled - click the 'Watchdog' button again to re-activate."))
         self.dynamic_menu()
 
     def show_new_window(self, checked):
