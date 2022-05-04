@@ -25,3 +25,7 @@ The following command will install the packages according to the configuration f
 pip install -r requirements.txt
 ```
 Put requirements.txt in the directory where the command will be executed. If it is in another directory, specify its path like path/to/requirements.txt.
+
+## Usage
+* Run the ARS_GUI.py.
+* Done!
