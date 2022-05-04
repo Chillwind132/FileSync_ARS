@@ -20,11 +20,16 @@ A file synchronization project inspired by FreeFileSync with some tweaks, change
 * Windows 10/11 recommended.
 
 ## Prerequisites
-The following command will install the packages according to the configuration file "requirements.txt"
-```
-pip install -r requirements.txt
-```
-Put requirements.txt in the directory where the command will be executed. If it is in another directory, specify its path like path/to/requirements.txt.
+
+* Python 3.9+
+* Windows 10+
+
+## Installation
+
+1. The following command will install the packages according to the configuration file "requirements.txt"
+   ```
+   pip install -r requirements.txt
+   ```
 
 ## Usage
 * Run the ARS_GUI.py.
