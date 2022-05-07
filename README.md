@@ -33,4 +33,4 @@ A file synchronization project inspired by FreeFileSync with some tweaks, change
 
 ## Usage
 * Run the ARS_GUI.py.
-* Done!
+* Additional documentation is provided in the app.
