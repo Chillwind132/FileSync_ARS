@@ -217,12 +217,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     self.button_sync.setDisabled(True)
                     self.button_generate_mscript.setDisabled(True)
                     self.button_launch_watchdog.setDisabled(True)
-                    print("ONE OFF")
                 elif os.path.isdir(self.text_t) is True and os.path.isdir(self.text_t) is True:
                     self.button_sync.setDisabled(False)
                     self.button_generate_mscript.setDisabled(False)
                     self.button_launch_watchdog.setDisabled(False)
-                    print("ALL GOOD")
         
         else:
             with open('data.yml', 'w') as outfile:
@@ -295,7 +293,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         if self.checkBox_force.isChecked():
             self.force_file_sync = True
             self.save_to_yaml(force=True)
-            print("force_file_sync enabled")
         else:
             self.force_file_sync = False
             self.save_to_yaml(force=False)
@@ -315,7 +312,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         if source_path == "":
             return
         self.lineEdit_source.setText('{}'.format(source_path))
-        print(source_path)
+        
         global text_s
         text_s = self.text_s = source_path
 
@@ -331,7 +328,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         if target_path == "":
             return
         self.lineEdit_target.setText('{}'.format(target_path))
-        print(target_path)
+       
         global text_t
         text_t = self.text_t = target_path
 
@@ -367,13 +364,13 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         except Exception:
             self.textEdit_m.setText('{}'.format(
                 "Sync argument exception! 'Create files' setting not enabled? "))
-        print(self.force_file_sync)
+        
 
     def get_drive_letter(self, abb_path):
         self.m = re.search(r"\[([A-Za-z0-9_]+)\]", abb_path)
         if self.m:
             found = self.m.group(1)
-            print(found)
+            
             return found
         return ""
         
@@ -382,7 +379,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.volumeN_source = self.get_drive_letter(text_s)
         for drive in c.Win32_LogicalDisk():
             if drive.VolumeName == self.volumeN_source:
-                #print(drive.Caption)
+                
                 return drive.Caption
 
     def find_drive_target(self): 
@@ -392,14 +389,14 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         
         for drive in c.Win32_LogicalDisk():
             if drive.VolumeName == self.volumeN_target:
-                #print(drive.Caption)
+               
                 return drive.Caption
 
     def get_full_path(self, drive, path, volumeN):
         if (path.find(str(drive)) != -1):
             return path
         self.path = str(drive) + path.replace(volumeN, "")
-        #print(drive, path, volumeN)
+        
         return self.path
 
     def _enable_auto_flag(self):
@@ -438,12 +435,12 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.button_sync.setDisabled(True)
             self.button_generate_mscript.setDisabled(True)
             self.button_launch_watchdog.setDisabled(True)
-            print("ONE OFF")
+            
         elif os.path.isdir(self.text_t) is True and os.path.isdir(self.text_t) is True:
             self.button_sync.setDisabled(False)
             self.button_generate_mscript.setDisabled(False)
             self.button_launch_watchdog.setDisabled(False)
-            print("ALL GOOD")
+            
         if self.checkBox_override.isChecked():
             self.button_sync.setDisabled(False)
             self.button_generate_mscript.setDisabled(False)
@@ -492,7 +489,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 self.selected_drive_index = re.split('[:]', self.v)
                 self.selected_drive_index[0] += ":" # Selected Drive
                 self.selected_drive = self.selected_drive_index[0]
-                #print(self.selected_drive)
+                
                 self.pre_populate_data()
             if win.checkBox_3.isChecked() is False:
                 self.button_launch_watchdog.setDisabled(False)
@@ -757,7 +754,6 @@ class AnotherWindow_settings(QtWidgets.QDialog):
             self.checkBox_minimize.setChecked(True)
         
     def update_values(self):
-        
         if self.checkBox_create.isChecked():
             self.save_to_yaml(create=True)
         else:
@@ -865,7 +861,7 @@ class Watcher(Ui_MainWindow):
             self.valid_path_target = self.get_full_path(self.volume_letter_target, text_t,"[" + str(self.volumeN_target) + "]")
             
             time.sleep(2)
-        print("drive connected")
+        
         if self.volume_letter_source is not None and self.volume_letter_target is not None:
         
                 sync(self.valid_path_source, self.valid_path_target,
@@ -874,7 +870,7 @@ class Watcher(Ui_MainWindow):
 
                 self.watch_id = self.observer.schedule(self.handler, self.valid_path_source, recursive=True)
                 self.observer.start()
-        #try:
+    
         while True:
                 print("\nWatcher Running in {}/\n".format(self.directory))
                 time.sleep(1)
@@ -894,14 +890,12 @@ class Watcher(Ui_MainWindow):
                     self.observer.schedule(
                         self.handler, self.valid_path_source, recursive=True)
                     self.unscheduled = False
-                    print('Drive DISCONNECTED')
+                    
                 if stop_threads is True:
                     self.observer.stop()
                     self.observer.join()
                     return
-        #except Exception:
-            #self.observer.stop()
-            #self.observer.join()
+        
         print("\nWatcher Terminated\n")
 
     def load_yaml_config(self):
@@ -928,7 +922,7 @@ class Watcher(Ui_MainWindow):
         self.m = re.search(r"\[([A-Za-z0-9_]+)\]", abb_path)
         if self.m:
             found = self.m.group(1)
-            print(found)
+            
             return found
         return ""
         
@@ -939,7 +933,7 @@ class Watcher(Ui_MainWindow):
         
         for drive in c.Win32_LogicalDisk():
             if drive.VolumeName == self.volumeN_source:
-                #print(drive.Caption)
+                
                 return drive.Caption
 
     def find_drive_target(self): 
@@ -949,14 +943,14 @@ class Watcher(Ui_MainWindow):
         
         for drive in c.Win32_LogicalDisk():
             if drive.VolumeName == self.volumeN_target:
-                #print(drive.Caption)
+                
                 return drive.Caption
 
     def get_full_path(self, drive, path, volumeN):
         if (path.find(str(drive)) != -1):
             return path
         self.path = str(drive) + path.replace(volumeN, "")
-        #print(drive, path, volumeN)
+        
         return self.path
 
 
@@ -986,7 +980,7 @@ class MyHandler(FileSystemEventHandler):
         
         for drive in c.Win32_LogicalDisk():
             if drive.VolumeName == self.volumeN_source:
-                #print(drive.Caption)
+                
                 return drive.Caption
     def find_drive_target(self): 
         c = wmi.WMI()
@@ -995,14 +989,14 @@ class MyHandler(FileSystemEventHandler):
 
         for drive in c.Win32_LogicalDisk():
             if drive.VolumeName == self.volumeN_target:
-                #print(drive.Caption)
+                
                 return drive.Caption
 
     def get_full_path(self, drive, path, volumeN):
         if (path.find(drive) != -1):
             return path
         self.path = str(drive) + path.replace(volumeN, "")
-        #print(drive, path, volumeN)
+        
         return self.path
 
     def load_yaml_config(self):
@@ -1019,7 +1013,6 @@ class MyHandler(FileSystemEventHandler):
         self.m = re.search(r"\[([A-Za-z0-9_]+)\]", abb_path)
         if self.m:
             found = self.m.group(1)
-            print(found)
             return found
         return ""
 
