@@ -97,7 +97,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.checkBox_force.stateChanged.connect(self.sync_parameters)
 
         self.textEdit_m.setText('{}'.format(
-            "Select your source and target directory for data synchronisation.\n---\nIf you wish, you have an option to sync to a removable media - enable this option by clicking on the 'Drive' button.\n---\nWatchdog will monitor and sync any changes from the source directory. \n---\n'Auto' mode will start the application minimized and run watchdog automatically."))
+            "Select your source and target directory for data synchronization.\n---\nIf you wish, you have an option to sync to a removable media - enable this option by clicking on the 'Drive' button.\n---\nWatchdog will monitor and sync any changes from the source directory. \n---\n'Auto' mode will start the application minimized and run watchdog automatically."))
         
         self.disambiguateTimer = QtCore.QTimer(self)
         self.disambiguateTimer.setSingleShot(True)
@@ -128,7 +128,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.trayicon.activated.connect(self.onTrayIconActivated)
 
     def quit_app_t(self):
-        
         self.load_yaml_config()
         if self.minimize_tray:
             self.hide()
@@ -158,9 +157,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.show()
 
     def dynamic_menu(self):
-       
         self.menu.clear()
-
         checkAction = self.menu.addAction("Show Menu")
         checkAction.triggered.connect(self.show_main_window)
         if stop_threads is False:
@@ -202,7 +199,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.show()
 
     def first_load(self):
-        
         if os.path.isfile("data.yml"):
             with open('data.yml') as outfile:
                 global text_s, text_t
@@ -238,7 +234,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 yaml.dump(data, outfile)
 
     def save_to_yaml(self, **kwargs):
-
         for i, k in kwargs.items():   
             if i == "src":
                 with open('data.yml') as outfile:
@@ -539,6 +534,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
 class AnotherWindow(QtWidgets.QDialog):
     def __init__(self, parent=Ui_MainWindow):
+
         super(AnotherWindow, self).__init__()
         uic.loadUi('Dialog.ui', self)  # Load the .ui file
         self.setWindowTitle("Drive Selection Menu")
@@ -715,6 +711,7 @@ class AnotherWindow(QtWidgets.QDialog):
 
 class AnotherWindow_settings(QtWidgets.QDialog):
     def __init__(self, parent=Ui_MainWindow):
+        
         super(AnotherWindow_settings, self).__init__()
         uic.loadUi('Dialog_s.ui', self)  # Load the .ui file
         self.setWindowTitle("Settings")
@@ -881,7 +878,7 @@ class Watcher(Ui_MainWindow):
                     self.volume_letter_source, text_s, "[" + str(self.volumeN_source) + "]")
                 self.valid_path_target = valid_path_target_sync = self.get_full_path(
                     self.volume_letter_target, text_t, "[" + str(self.volumeN_target) + "]")
-                if self.volume_letter_source is None or self.volume_letter_target is None: ## Check this logic again
+                if self.volume_letter_source is None or self.volume_letter_target is None: 
                     
                     self.observer.unschedule_all()
                     self.unscheduled = True
